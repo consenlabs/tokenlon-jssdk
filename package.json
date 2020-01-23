@@ -3,7 +3,7 @@
   "version": "0.0.1-beta.1",
   "main": "./lib/index.js",
   "repository": "git@github.com:consenlabs/tokenlon-jssdk.git",
-  "author": "imToken PTE. LTD.",
+  "author": "TOKENLON © DIGITAL ERA GLOBAL LIMITED",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
