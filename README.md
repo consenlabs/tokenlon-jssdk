@@ -2,4 +2,4 @@
 
 See [docs](https://docs.token.im/tokenlon-jssdk/)
 
-copyright© imToken PTE. LTD.
+TOKENLON © DIGITAL ERA GLOBAL LIMITED.
