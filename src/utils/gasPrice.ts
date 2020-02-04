@@ -17,13 +17,14 @@ export const getGasPriceAsync = async (simpleOrder) => {
   // must be undefined
   let gasPrice = undefined
 
-  // orderWorthLevel: low —— gasstation average
+  // orderWorthLevel: low —— gasstation [updated: use fast]
   // orderWorthLevel: middle —— gasstation fast
   // orderWorthLevel: high —— gasstation fast * 1.2
   const orderWorthLevel = await getSimpleOrderWorthLevel(simpleOrder)
 
   try {
-    const gasPriceAdaptorType = orderWorthLevel === OrderWorthLevel.low ? 'average' : 'fast'
+    // use fast
+    const gasPriceAdaptorType = 'fast'
     gasPrice = await getGasPriceByAdaptor(gasPriceAdaptorType)
   } catch (e) {}
 
