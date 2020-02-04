@@ -28,6 +28,8 @@ export const isBigNumber = (v: any) => {
     false
 }
 
+export const getTimestamp = () => Math.round(Date.now() / 1000)
+
 export const padLeft = (n: string, width: number, z?: string): string => {
   const nz = z || '0'
   const nn = '' + n
@@ -244,10 +246,6 @@ export const isCompeletedTxAsync = async (hash: string): Promise<boolean> => {
   } catch (e) {
     return false
   }
-}
-
-export const getTimestamp = () => {
-  return Math.round(Date.now() / 1000)
 }
 
 export function compareAddress(first: string, second: string): boolean {

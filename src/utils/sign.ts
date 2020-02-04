@@ -1,10 +1,9 @@
 import * as ethUtil from 'ethereumjs-util'
-import { leftPadWith0 } from './helper'
 import * as _ from 'lodash'
 import * as Tx from 'ethereumjs-tx'
 import { toHex, sha3 } from 'web3-utils'
 import { SignResult } from '../global'
-import { fromUnitToDecimal, addHexPrefix } from './utils'
+import { fromUnitToDecimal, addHexPrefix, padLeft } from './utils'
 import { getConfig } from '../config'
 
 export interface ECSignature {
@@ -25,8 +24,8 @@ export const concatSig = (ecSignatureBuffer: ECSignatureBuffer): Buffer => {
   const vSig = ethUtil.bufferToInt(v)
   const rSig = ethUtil.fromSigned(r)
   const sSig = ethUtil.fromSigned(s)
-  const rStr = leftPadWith0(ethUtil.toUnsigned(rSig).toString('hex'), 64)
-  const sStr = leftPadWith0(ethUtil.toUnsigned(sSig).toString('hex'), 64)
+  const rStr = padLeft(ethUtil.toUnsigned(rSig).toString('hex'), 64)
+  const sStr = padLeft(ethUtil.toUnsigned(sSig).toString('hex'), 64)
   const vStr = ethUtil.stripHexPrefix(ethUtil.intToHex(vSig))
   return ethUtil.addHexPrefix(rStr.concat(sStr, vStr)).toString('hex')
 }

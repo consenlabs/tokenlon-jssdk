@@ -1,5 +1,5 @@
 import JssdkClient from './index'
-import { getTimestamp } from './utils/timestamp'
+import { getTimestamp } from './utils/utils'
 
 const jssdkClient = JssdkClient({
   address: '',

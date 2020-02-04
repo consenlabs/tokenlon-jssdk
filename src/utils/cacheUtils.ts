@@ -1,4 +1,4 @@
-import { getTimestamp } from './timestamp'
+import { getTimestamp } from './utils'
 import { TokenlonToken, TokenlonConfig } from '../global'
 import { CACHE_DATA_SECONDS } from '../constants'
 import { getTradeTokenList, getMobileAppConfig, getSdkJwtToken } from '../request/client'

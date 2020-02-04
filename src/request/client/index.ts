@@ -9,7 +9,7 @@ import {
 import { TokenlonConfig } from '../../global'
 import { TokenlonToken } from '../../global'
 import { WEBSOCKET_URL } from '../../constants'
-import { getTimestamp } from '../../utils/timestamp'
+import { getTimestamp } from '../../utils/utils'
 import { personalSign } from '../../utils/sign'
 
 export const getTradeTokenList = async (): Promise<TokenlonToken[]> => {
