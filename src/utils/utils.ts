@@ -187,6 +187,8 @@ export function getBlockNumber(): Promise<number> {
 export function sendSignedTransaction(rawTx): Promise<string> {
   return web3RequestWrap(web3 => {
     return new Promise((resolve, reject) => {
+      // TODO: maybe there will be an error named 'Failed to check for transaction receipt'
+      // https://github.com/ethereum/web3.js/issues/3145
       web3.eth.sendSignedTransaction(rawTx, (err, txHash: string) => {
         if (!err) {
           resolve(txHash)
