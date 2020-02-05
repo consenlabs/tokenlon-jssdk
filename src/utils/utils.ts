@@ -261,7 +261,7 @@ export const getTokenBySymbolAsync = async (symbol) => {
   if (!symbol || !_.isString(symbol)) throw JSSDK_ERRORS.PARAMS_ERROR
 
   const tokenList = await getCachedTokenList()
-  const token = tokenList.find(t => t.symbol === symbol.toUpperCase())
+  const token = tokenList.find(t => t.symbol.toUpperCase() === symbol.toUpperCase())
 
   if (!token) throw JSSDK_ERRORS.TOKEN_NOT_FOUND
 
