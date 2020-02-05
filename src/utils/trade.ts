@@ -144,7 +144,7 @@ export const getQuote = async (params: SimpleOrder): Promise<QuoteResult> => {
   await checkTradeSupported({ base, quote, amount })
 
   setStompClient()
-  await setStompConnect({})
+  await setStompConnect()
 
   try {
     // only to fix lastOrder front steps

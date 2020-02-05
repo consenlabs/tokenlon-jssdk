@@ -1,6 +1,5 @@
 import { fn, TokenlonMakerOrderBNToString, TokenlonToken } from '../global'
 import StompForExchange from './StompForExchange'
-import { ConnectParams } from './interface'
 import { toBN } from '../utils/utils'
 import { getConfig } from '../config'
 import { SimpleOrder } from '../utils/trade'
@@ -22,9 +21,9 @@ export interface UpdateRateAndPriceByStompParams {
   operateInputMode: 'maker' | 'taker'
 }
 
-export const setStompConnect = async (connectParams: ConnectParams) => {
+export const setStompConnect = async () => {
   try {
-    await stompClient.connectStompAsync(connectParams)
+    await stompClient.connectStompAsync()
   } catch (e) {
     throw e
   }

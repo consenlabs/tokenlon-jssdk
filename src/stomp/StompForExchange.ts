@@ -1,6 +1,5 @@
 import * as SockJS from 'sockjs-client'
 import { Stomp } from 'stompjs/lib/stomp'
-import { ConnectParams } from './interface'
 import { WEBSOCKET_URL } from '../constants'
 import { getCachedSdkJwtToken } from '../utils/cacheUtils'
 import { JSSDK_ERRORS } from '../utils/errors'
@@ -29,7 +28,7 @@ export default class StompForExchange {
   // 避免页面退出后仍一直重连
   connectInterrupt = false
 
-  private tryConnectStompAsync = async (connectParams: ConnectParams) => {
+  private tryConnectStompAsync = async () => {
     const token = await getCachedSdkJwtToken()
     const Authorization = `JSSDK ${token}`
     const host = WEBSOCKET_URL.replace(/\/rpc$/, '')
@@ -42,27 +41,7 @@ export default class StompForExchange {
           '',
           '',
           resolve,
-          async (e) => {
-            const { disconnectCallback, reconnectCallback } = connectParams
-            disconnectCallback && disconnectCallback()
-            console.log('disconnect', e)
-            // 断线重连
-            try {
-              this.connecting = false
-              await this.connectStompAsync(connectParams)
-
-              // auto reconnect
-              reconnectCallback && reconnectCallback()
-              console.log('reconnected')
-
-              // auto resubscribe
-              if (this._subscribeName && this.lastOrderSubscription !== 'lastOrderSubscription' && this._path && this._callback) {
-                this.wsSubscribeJsonHelper(this._subscribeName, this._path, this._callback, this._header)
-              }
-            } catch (e) {
-              console.log('reconnect failed', e)
-            }
-          },
+          reject,
         )
       } catch (e) {
         console.log('connect init error', e)
@@ -71,7 +50,7 @@ export default class StompForExchange {
     })
   }
 
-  connectStompAsync = async (connectParams: ConnectParams) => {
+  connectStompAsync = async () => {
     if (this.connectInterrupt) {
       return
     }
@@ -83,7 +62,7 @@ export default class StompForExchange {
     }
     try {
       this.connecting = true
-      await this.tryConnectStompAsync(connectParams)
+      await this.tryConnectStompAsync()
       this.triedFailedTimes = 0
       this.connecting = false
     } catch (e) {
@@ -95,7 +74,7 @@ export default class StompForExchange {
       await new Promise(resolve => {
         setTimeout(resolve, TRY_CONNECT_INTERVAL)
       })
-      await this.connectStompAsync(connectParams)
+      await this.connectStompAsync()
     }
   }
 
@@ -155,39 +134,6 @@ export default class StompForExchange {
 
   getSymbol = ({ base, quote }) => {
     return `${base.toUpperCase()}_${quote.toUpperCase()}`
-  }
-
-  getTokenlonRate = ({
-    base,
-    quote,
-    side,
-    currency,
-  }, callback) => {
-    const symbol = this.getSymbol({ base, quote })
-    const path = `/tokenlon/rate/${symbol}/${side.toUpperCase()}`
-    this.wsSubscribeJsonHelper(
-      'tokenlonRateSubscription',
-      path,
-      callback,
-      currency ? { currency } : {},
-    )
-  }
-
-  getUserRate = ({
-    base,
-    quote,
-    side,
-    amount,
-    currency,
-  }, callback) => {
-    const symbol = this.getSymbol({ base, quote })
-    const path = `/user/rate/${symbol}/${side.toUpperCase()}/${amount}`
-    this.wsSubscribeJsonHelper(
-      'userRateSubscription',
-      path,
-      callback,
-      currency ? { currency } : {},
-    )
   }
 
   // /user/order/{symbol}/{side}/{amount}/{userAddr}
