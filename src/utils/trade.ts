@@ -1,12 +1,12 @@
 import { getCachedTokenList } from './cacheUtils'
 import { JSSDK_ERRORS } from './errors'
 import { setStompClient, setStompConnect, unsubscribeStompClientAll, disconnectStompClient, getNewOrderAsync, getLastOrderAsync, StompWsResult } from '../stomp/stompClient'
-import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync } from './utils'
+import { toBN, getTimestamp, fromDecimalToUnit } from './utils'
 import { signHandlerAsync } from './exchange/signHandlerAsync'
 import { placeOrderAsync } from './exchange/placeOrderAsync'
 import { cacheUsedNonce } from './nonce'
-import { getBalanceAsync } from './balance'
-import { getAllowanceAsync } from './allowance'
+// import { getBalanceAsync } from './balance'
+// import { getAllowanceAsync } from './allowance'
 import { TokenlonMakerOrderBNToString } from '../global'
 
 export interface SimpleOrder {
@@ -189,27 +189,27 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
     throw JSSDK_ERRORS.QUOTE_DATA_10S_EXPIRED
   }
 
-  const { base, quote, side, amount } = cachedQuoteData.simpleOrder
+  const { base, quote, side } = cachedQuoteData.simpleOrder
   const upperCasedSide = side.toUpperCase()
 
   const userOutTokenSymbol = upperCasedSide === 'SELL' ? base : quote
   const isMakerEth = userOutTokenSymbol === 'ETH'
-  const userOutToken = await getTokenBySymbolAsync(userOutTokenSymbol)
-  const userOutTokenAmount = upperCasedSide === 'SELL' ? amount :
-    fromDecimalToUnit(cachedQuoteData.order.takerAssetAmount, userOutToken.decimal).toNumber()
-  const balance = await getBalanceAsync(userOutTokenSymbol)
+  // const userOutToken = await getTokenBySymbolAsync(userOutTokenSymbol)
+  // const userOutTokenAmount = upperCasedSide === 'SELL' ? amount :
+  //   fromDecimalToUnit(cachedQuoteData.order.takerAssetAmount, userOutToken.decimal).toNumber()
+  // const balance = await getBalanceAsync(userOutTokenSymbol)
 
   // balance check
-  if (userOutTokenAmount > balance || (isMakerEth && userOutTokenAmount >= balance)) {
-    throw JSSDK_ERRORS.BALANCE_NOT_ENOUGH
-  }
+  // if (userOutTokenAmount > balance || (isMakerEth && userOutTokenAmount >= balance)) {
+  //   throw JSSDK_ERRORS.BALANCE_NOT_ENOUGH
+  // }
 
-  if (!isMakerEth) {
-    const allowance = await getAllowanceAsync(userOutTokenSymbol)
-    if (userOutTokenAmount > allowance) {
-      throw JSSDK_ERRORS.ALLOWANCE_NOT_ENOUGH
-    }
-  }
+  // if (!isMakerEth) {
+  //   const allowance = await getAllowanceAsync(userOutTokenSymbol)
+  //   if (userOutTokenAmount > allowance) {
+  //     throw JSSDK_ERRORS.ALLOWANCE_NOT_ENOUGH
+  //   }
+  // }
 
   const signedResult = await signHandlerAsync({
     simpleOrder: cachedQuoteData.simpleOrder,
