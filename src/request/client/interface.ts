@@ -3,6 +3,7 @@ export type orderStatus = 'success' | 'pending' | 'faild'
 export interface PlaceOrderParams {
   userAddr: string
   order: any
+  source: 'jssdk'
   txHash?: string
   rawTx?: string
   nonce?: number
