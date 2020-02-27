@@ -5,7 +5,7 @@ import { getPairs, getTicker, getTickerHistory, getTradeCap, getTradeCapHistory 
 import { getOrderState, getOrdersHistory } from './request/client'
 import { getCachedTokenList } from './utils/cacheUtils'
 import { getQuote, trade } from './utils/trade'
-import { genPersonalSignFN, genSignTransactionFN } from './utils/sign/gen'
+import { genPersonalSign, genSignRawTransaction } from './utils/sign/gen'
 import { getBalanceAsync, getBalancesAsync } from './utils/balance'
 import { getAllowanceAsync, isAllowanceEnoughAsync, setAllowanceAsync, setUnlimitedAllowanceAsync, closeAllowanceAsync } from './utils/allowance'
 
@@ -40,9 +40,9 @@ const JssdkClient = (config: IConfig) => {
   }
 }
 
-JssdkClient.genPersonalSignFN = genPersonalSignFN
-JssdkClient.genSignTransactionFN = genSignTransactionFN
+JssdkClient.genPersonalSign = genPersonalSign
+JssdkClient.genSignRawTransaction = genSignRawTransaction
 
-export { genPersonalSignFN, genSignTransactionFN }
+export { genPersonalSign, genSignRawTransaction }
 
 export default JssdkClient

@@ -22,7 +22,7 @@ const concatSig = (ecSignatureBuffer: ECSignatureBuffer): Buffer => {
   return ethUtil.addHexPrefix(rStr.concat(sStr, vStr)).toString('hex')
 }
 
-export const genPersonalSignFN = (privateKey: string): PersonalSignFn => {
+export const genPersonalSign = (privateKey: string): PersonalSignFn => {
   return (msg: string) => {
     const message = ethUtil.toBuffer(msg)
     const msgHash = ethUtil.hashPersonalMessage(message)
@@ -44,7 +44,7 @@ export interface SignRawTransactionFnParams {
 
 // use ethereumjs-tx and web3.eth.sendSignedTransaction to send transaction by privateKey
 // value must be a decimal processed number
-export const genSignTransactionFN = (privateKey: string): signRawTransactionFn => {
+export const genSignRawTransaction = (privateKey: string): signRawTransactionFn => {
   return (rawTx: SignRawTransactionFnParams): string => {
     const tx = new (Tx.default ? Tx.default : Tx)(rawTx)
     const privateKeyBuffer = new Buffer(privateKey, 'hex')
