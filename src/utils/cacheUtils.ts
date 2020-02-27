@@ -2,7 +2,6 @@ import { getTimestamp } from './utils'
 import { TokenlonToken, TokenlonConfig } from '../global'
 import { CACHE_DATA_SECONDS } from '../constants'
 import { getTradeTokenList, getMobileAppConfig, getSdkJwtToken } from '../request/client'
-import { getConfig } from '../config'
 
 const isExpired = (timestamp) => {
   return timestamp < getTimestamp() - CACHE_DATA_SECONDS
@@ -37,7 +36,7 @@ let cacheSdkJwtTokenTimestamp = 0
 
 export const getCachedSdkJwtToken = async () => {
   if (isExpired(cacheSdkJwtTokenTimestamp) || !cachedSdkJwtToken) {
-    cachedSdkJwtToken = await getSdkJwtToken(getConfig().privateKey)
+    cachedSdkJwtToken = await getSdkJwtToken()
     cacheSdkJwtTokenTimestamp = getTimestamp()
   }
 

@@ -1,5 +1,5 @@
 import { BigNumber } from './0xv2-lib'
-import { SignResult } from '../../global'
+import { SignTransactionResult } from '../../global'
 import { PlaceOrderParams } from '../../request/client/interface'
 
 export interface SignedTakerData {
@@ -24,7 +24,7 @@ export interface SignFillOrderWithEthParams {
 
 export interface SignFillOrderWithEthResult {
   amount: string | number
-  signResult: SignResult,
+  signResult: SignTransactionResult,
 }
 
 export interface SignHandlerResult extends PlaceOrderParams {

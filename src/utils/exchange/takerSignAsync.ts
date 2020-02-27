@@ -5,7 +5,7 @@ import { encodeData } from './abi/encodeData2'
 import { orderStringToBN, orderBNToString } from './helper'
 import { getConfig } from '../../config'
 import { getCachedAppConfig } from '../cacheUtils'
-import { personalSign, parseSignatureHexAsRSV, parseSignatureHexAsVRS } from '../sign'
+import { parseSignatureHexAsRSV, parseSignatureHexAsVRS } from '../sign'
 import { TokenlonMakerOrderBNToString } from '../../global'
 
 interface SignedTakerData {
@@ -35,19 +35,17 @@ const translateMakerOrder = (makerOrder) => {
 
 /**
  * @author Xaber
- * @param signerPrivateKey signer privateKey
  * @param orderHash
  * @param signerAddress
  */
 export const ecSignOrderHash = (
-  signerPrivateKey,
   signerAddress: string,
   orderHash: string,
 ) => {
   let msgHashHex = orderHash
   const normalizedSignerAddress = signerAddress.toLowerCase()
   const prefixedMsgHashHex = signatureUtils.addSignedMessagePrefix(orderHash)
-  const signature = personalSign(signerPrivateKey, msgHashHex)
+  const signature = getConfig().personalSignFn(msgHashHex)
 
   // HACK: There is no consensus on whether the signatureHex string should be formatted as
   // v + r + s OR r + s + v, and different clients (even different versions of the same client)
@@ -102,7 +100,7 @@ export const takerSignAsync = async (userAddr: string, makerOrder: TokenlonMaker
       ethUtil.toBuffer(receiverAddr),
     ]))
 
-  const takerSignatureHex = await ecSignOrderHash(getConfig().privateKey, userAddr, hash)
+  const takerSignatureHex = await ecSignOrderHash(userAddr, hash)
   const walletSign = ethUtil.bufferToHex(
     Buffer.concat([
       ethUtil.toBuffer(takerSignatureHex).slice(0, 65),

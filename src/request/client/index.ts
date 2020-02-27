@@ -10,7 +10,7 @@ import { TokenlonConfig } from '../../global'
 import { TokenlonToken } from '../../global'
 import { WEBSOCKET_URL } from '../../constants'
 import { getTimestamp } from '../../utils/utils'
-import { personalSign } from '../../utils/sign'
+import { getConfig } from '../../config'
 
 export const getTradeTokenList = async (): Promise<TokenlonToken[]> => {
   const tokens = await jsonrpc.get(
@@ -38,9 +38,9 @@ const getTokenFromServer = async ({ timestamp, signature }): Promise<string> => 
   )
 }
 
-export const getSdkJwtToken = async (privateKey: string) => {
+export const getSdkJwtToken = async () => {
   const timestamp = getTimestamp()
-  const signature = personalSign(privateKey, timestamp.toString())
+  const signature = getConfig().personalSignFn(timestamp.toString())
   return getTokenFromServer({ timestamp, signature })
 }
 

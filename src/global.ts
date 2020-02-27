@@ -1,5 +1,26 @@
 export type fn = (...args: any[]) => any
 
+export type PersonalSignFn = (msg: string) => string
+
+export interface SignRawTransactionFnParams {
+  to: string
+  data: string
+  from: string
+  nonce: string
+  gasLimit: string
+  gasPrice: string
+  value: string
+}
+
+export type signRawTransactionFn = (rawTxData: SignRawTransactionFnParams) => string
+
+export interface IConfig {
+  address: string
+  providerUrl: string
+  personalSignFn: PersonalSignFn
+  signRawTransactionFn: signRawTransactionFn
+}
+
 export interface TokenlonConfig {
   networkId: number,
   erc20ProxyContractAddress: string
@@ -48,7 +69,7 @@ export interface TokenlonOrderBNToString extends TokenlonMakerOrderBNToString {
   takerWalletSignature: string
 }
 
-export type SignResult = {
+export type SignTransactionResult = {
   sign: string
   hash: string,
 }

@@ -1,9 +1,11 @@
 import 'babel-polyfill'
-import { IConfig, setConfig } from './config'
+import { IConfig } from './global'
+import { setConfig } from './config'
 import { getPairs, getTicker, getTickerHistory, getTradeCap, getTradeCapHistory } from './request/market'
 import { getOrderState, getOrdersHistory } from './request/client'
 import { getCachedTokenList } from './utils/cacheUtils'
 import { getQuote, trade } from './utils/trade'
+import { genPersonalSignFN, genSignTransactionFN } from './utils/sign/gen'
 import { getBalanceAsync, getBalancesAsync } from './utils/balance'
 import { getAllowanceAsync, isAllowanceEnoughAsync, setAllowanceAsync, setUnlimitedAllowanceAsync, closeAllowanceAsync } from './utils/allowance'
 
@@ -37,5 +39,10 @@ const JssdkClient = (config: IConfig) => {
     closeAllowance: closeAllowanceAsync,
   }
 }
+
+JssdkClient.genPersonalSignFN = genPersonalSignFN
+JssdkClient.genSignTransactionFN = genSignTransactionFN
+
+export { genPersonalSignFN, genSignTransactionFN }
 
 export default JssdkClient

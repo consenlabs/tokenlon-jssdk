@@ -3,7 +3,8 @@ import { getTimestamp } from './utils/utils'
 
 const jssdkClient = JssdkClient({
   address: '',
-  privateKey: '',
+  personalSignFn: JssdkClient.genPersonalSignFN(''),
+  signRawTransactionFn: JssdkClient.genSignTransactionFN(''),
   providerUrl: 'https://kovan.infura.io/v3/bf419bb938be4ce18c712080e90c2a26',
 })
 
