@@ -2,6 +2,7 @@ import JssdkClient from './index'
 import { getTimestamp } from './utils/utils'
 
 const jssdkClient = JssdkClient({
+  debug: true,
   address: '',
   personalSignFn: JssdkClient.genPersonalSign(''),
   signRawTransactionFn: JssdkClient.genSignRawTransaction(''),

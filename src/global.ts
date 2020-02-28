@@ -15,6 +15,7 @@ export interface SignRawTransactionFnParams {
 export type signRawTransactionFn = (rawTxData: SignRawTransactionFnParams) => string
 
 export interface IConfig {
+  debug?: boolean
   address: string
   providerUrl: string
   personalSignFn: PersonalSignFn

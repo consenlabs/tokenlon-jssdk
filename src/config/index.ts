@@ -3,6 +3,7 @@ import { JSSDK_ERRORS } from '../utils/errors'
 import { IConfig, SignRawTransactionFnParams } from '../global'
 
 const config = {
+  debug: false,
   address: '',
   providerUrl: '',
   personalSignFn(_privateKey: string) { return '' },

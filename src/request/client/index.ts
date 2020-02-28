@@ -1,5 +1,4 @@
 import { jsonrpc } from '../_request'
-import { EXCHANGE_URL, TOKENLON_MARKET_URL } from '../../constants'
 import {
   PlaceOrderParams,
   PlaceOrderResult,
@@ -8,13 +7,13 @@ import {
 } from './interface'
 import { TokenlonConfig } from '../../global'
 import { TokenlonToken } from '../../global'
-import { WEBSOCKET_URL } from '../../constants'
 import { getTimestamp } from '../../utils/utils'
 import { getConfig } from '../../config'
+import { getExchangeUrl, getWebsocketUrl, getTokenlonMarketUrl } from '../../config/urls'
 
 export const getTradeTokenList = async (): Promise<TokenlonToken[]> => {
   const tokens = await jsonrpc.get(
-    EXCHANGE_URL,
+    getExchangeUrl(),
     {},
     'tokenlon.getTradeTokenList',
     {})
@@ -28,7 +27,7 @@ export const getTradeTokenList = async (): Promise<TokenlonToken[]> => {
 
 const getTokenFromServer = async ({ timestamp, signature }): Promise<string> => {
   return jsonrpc.get(
-    WEBSOCKET_URL,
+    getWebsocketUrl(),
     {},
     'auth.getSdkJwtToken',
     {
@@ -45,12 +44,12 @@ export const getSdkJwtToken = async () => {
 }
 
 export const getMobileAppConfig = (): Promise<TokenlonConfig> => {
-  return jsonrpc.get(EXCHANGE_URL, {}, 'tokenlon.getMobileAppConfig', {})
+  return jsonrpc.get(getExchangeUrl(), {}, 'tokenlon.getMobileAppConfig', {})
 }
 
 export const placeOrder = (params: PlaceOrderParams): Promise<PlaceOrderResult> => {
   return jsonrpc.get(
-    EXCHANGE_URL,
+    getExchangeUrl(),
     {},
     'tokenlon.placeOrder',
     params,
@@ -59,7 +58,7 @@ export const placeOrder = (params: PlaceOrderParams): Promise<PlaceOrderResult> 
 
 export const getOrderState = async (executeTxHash: string): Promise<GetOrderStateResult> => {
   const result = await jsonrpc.get(
-    EXCHANGE_URL,
+    getExchangeUrl(),
     {},
     'tokenlon.getOrderState',
     {
@@ -72,7 +71,7 @@ export const getOrderState = async (executeTxHash: string): Promise<GetOrderStat
 
 export const getOrdersHistory = async (params: GetOrdersHistoryParams): Promise<any> => {
   const orders = await jsonrpc.get(
-    EXCHANGE_URL,
+    getExchangeUrl(),
     {},
     'tokenlon.getOrdersHistory',
     params,
@@ -82,7 +81,7 @@ export const getOrdersHistory = async (params: GetOrdersHistoryParams): Promise<
 
 export const getMarketPrice = async (symbol) => {
   return jsonrpc.get(
-    TOKENLON_MARKET_URL,
+    getTokenlonMarketUrl(),
     {},
     'api.getMarketPrice',
     {
