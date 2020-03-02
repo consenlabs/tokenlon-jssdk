@@ -1,6 +1,6 @@
 {
   "name": "tokenlon-jssdk",
-  "version": "0.0.1-beta.3",
+  "version": "0.0.1-beta.4",
   "main": "./lib/index.js",
   "repository": "git@github.com:consenlabs/tokenlon-jssdk.git",
   "author": "TOKENLON © DIGITAL ERA GLOBAL LIMITED",
