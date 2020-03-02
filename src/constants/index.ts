@@ -1,11 +1,3 @@
-export const EXCHANGE_URL = 'https://exchange.tokenlon.im/rpc'
-
-export const WEBSOCKET_URL = 'https://publisher.tokenlon.im/rpc'
-
-export const TOKENLON_MARKET_URL = 'https://tokenlon-market.tokenlon.im/rpc'
-
-export const TOKENLON_CORE_MARKET_URL = 'https://tokenlon-core-market.tokenlon.im/rpc'
-
 export const ETH_GAS_STATION_URL = 'https://ethgasstation.info/json/ethgasAPI.json'
 
 export const ETH_ADDRESS = `0x${'0'.repeat(40)}`

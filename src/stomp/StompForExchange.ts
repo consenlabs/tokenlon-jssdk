@@ -1,8 +1,8 @@
 import * as SockJS from 'sockjs-client'
 import { Stomp } from 'stompjs/lib/stomp'
-import { WEBSOCKET_URL } from '../constants'
 import { getCachedSdkJwtToken } from '../utils/cacheUtils'
 import { JSSDK_ERRORS } from '../utils/errors'
+import { getWebsocketUrl } from '../config/urls'
 
 const MAX_TRIED_TIMES = 3
 const TRY_CONNECT_INTERVAL = 1000
@@ -31,7 +31,7 @@ export default class StompForExchange {
   private tryConnectStompAsync = async () => {
     const token = await getCachedSdkJwtToken()
     const Authorization = `JSSDK ${token}`
-    const host = WEBSOCKET_URL.replace(/\/rpc$/, '')
+    const host = getWebsocketUrl().replace(/\/rpc$/, '')
     return new Promise((resolve, reject) => {
       try {
         const socket = new SockJS(`${host}/${endpoint}?Authorization=${encodeURIComponent(Authorization)}`)

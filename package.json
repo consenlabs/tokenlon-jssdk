@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "test": "yarn build && node ./lib/test.js"
+    "test": "rm -rf ./lib/ && yarn build && node ./lib/test.js"
   },
   "devDependencies": {
     "@types/node": "13.1.4",

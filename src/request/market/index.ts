@@ -1,5 +1,4 @@
 import { jsonrpc } from '../_request'
-import { TOKENLON_CORE_MARKET_URL } from '../../constants'
 import {
   GetTickerParams,
   Ticker,
@@ -10,10 +9,11 @@ import {
   GetTradeCapHistoryParams,
   TradeCapHistoryItem,
 } from './interface'
+import { getTokenlonCoreMarketUrl } from '../../config/urls'
 
 export const getPairs = async (): Promise<string[]> => {
   return jsonrpc.get(
-    TOKENLON_CORE_MARKET_URL,
+    getTokenlonCoreMarketUrl(),
     {},
     'market.getPairs',
     {},
@@ -22,7 +22,7 @@ export const getPairs = async (): Promise<string[]> => {
 
 export const getTicker = async (params: GetTickerParams): Promise<Ticker[]> => {
   return jsonrpc.get(
-    TOKENLON_CORE_MARKET_URL,
+    getTokenlonCoreMarketUrl(),
     {},
     'market.getTicker',
     params,
@@ -31,7 +31,7 @@ export const getTicker = async (params: GetTickerParams): Promise<Ticker[]> => {
 
 export const getTickerHistory = async (params: GetTickerHistoryParams): Promise<TickerHistoryItem[]> => {
   return jsonrpc.get(
-    TOKENLON_CORE_MARKET_URL,
+    getTokenlonCoreMarketUrl(),
     {},
     'market.getTickerHistory',
     params,
@@ -40,7 +40,7 @@ export const getTickerHistory = async (params: GetTickerHistoryParams): Promise<
 
 export const getTradeCap = async (params: GetTradeCapParams): Promise<GetTradeCapResult> => {
   return jsonrpc.get(
-    TOKENLON_CORE_MARKET_URL,
+    getTokenlonCoreMarketUrl(),
     {},
     'market.getTradeCap',
     params,
@@ -49,7 +49,7 @@ export const getTradeCap = async (params: GetTradeCapParams): Promise<GetTradeCa
 
 export const getTradeCapHistory = async (params: GetTradeCapHistoryParams): Promise<TradeCapHistoryItem[]> => {
   return jsonrpc.get(
-    TOKENLON_CORE_MARKET_URL,
+    getTokenlonCoreMarketUrl(),
     {},
     'market.getTradeCapHistory',
     params,
