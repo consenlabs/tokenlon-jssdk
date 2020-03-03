@@ -75,6 +75,13 @@ export interface QuoteResult {
   quoteAmount: number
   price: number
   timestamp: number
+  feeSymbol: string
+  feeAmount: number
+  transferTokenSymbol: string
+  transferTokenAmount: number
+  receiveTokenSymbol: string
+  receiveTokenAmount: number
+  priceExcludeFee: number
   minAmount?: number
   maxAmount?: number
 }
@@ -83,17 +90,51 @@ const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, order
   const { amount, base, quote, side } = simpleOrder
   const { order, minAmount, maxAmount } = orderData
   const tokenList = await getCachedTokenList()
-  const quoteToken = tokenList.find(t => t.symbol && quote && t.symbol.toUpperCase() === quote.toUpperCase())
-  let quoteAssetAmount = null
 
-  // 对于用户是买；做市商是卖，所以订单的 makerToken 就是 baseToken
+  const baseToken = tokenList.find(t => t.symbol && base && t.symbol.toUpperCase() === base.toUpperCase())
+  const quoteToken = tokenList.find(t => t.symbol && quote && t.symbol.toUpperCase() === quote.toUpperCase())
+
+  // 对于用户是买；做市商是卖出，所以订单的 makerToken 就是 baseToken
+  const makerToken = side === 'BUY' ? baseToken : quoteToken
+  const takerToken = side === 'BUY' ? quoteToken : baseToken
+
+  const makerTokenAmountUnit = fromDecimalToUnit(order.makerAssetAmount, makerToken.decimal).toNumber()
+  const takerTokenAmountUnit = fromDecimalToUnit(order.takerAssetAmount, takerToken.decimal).toNumber()
+
+  // 手续费收取的是订单的 makerToken
+  const feeToken = makerToken
+  // makerToken * feeFactor / 10000 即手续费
+  const feeAmount = toBN(makerTokenAmountUnit).times(order.feeFactor).dividedBy(10000).toNumber()
+
+  // 用户转出，就是做市商转入 takerToken
+  const transferToken = takerToken
+  const receiveToken = makerToken
+
+  let quoteAssetAmountUnit = null
+  let receiveTokenAmountUnit = null
+  let transferTokenAmountUnit = null
+  let priceExcludeFee = null
+
+  // 用户买
+  // base => order makerToken => user receiveToken => feeToken
+  // quote => order takerToken => user transferToken
   if (side === 'BUY') {
-    quoteAssetAmount = order.takerAssetAmount
+    quoteAssetAmountUnit = takerTokenAmountUnit
+    transferTokenAmountUnit = takerTokenAmountUnit
+    receiveTokenAmountUnit = toBN(makerTokenAmountUnit).minus(feeAmount).toNumber()
+    priceExcludeFee = toBN(transferTokenAmountUnit).dividedBy(receiveTokenAmountUnit).toNumber()
+
+  // 用户卖
+  // base => order takerToken => user transferToken
+  // quote => order makerToken => user receiveToken => feeToken
   } else {
-    quoteAssetAmount = order.makerAssetAmount
+    quoteAssetAmountUnit = makerTokenAmountUnit
+    transferTokenAmountUnit = takerTokenAmountUnit
+    receiveTokenAmountUnit = toBN(makerTokenAmountUnit).minus(feeAmount).toNumber()
+    priceExcludeFee = toBN(receiveTokenAmountUnit).dividedBy(transferTokenAmountUnit).toNumber()
   }
 
-  const quoteAssetAmountUnit = fromDecimalToUnit(quoteAssetAmount, quoteToken.decimal).toNumber()
+  const price = toBN(quoteAssetAmountUnit).dividedBy(amount).toNumber()
 
   return {
     base,
@@ -102,7 +143,14 @@ const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, order
     amount,
     quoteAmount: quoteAssetAmountUnit,
     quoteId: order.quoteId,
-    price: toBN(quoteAssetAmountUnit).dividedBy(amount).toNumber(),
+    price,
+    feeSymbol: feeToken.symbol,
+    feeAmount,
+    transferTokenSymbol: transferToken.symbol,
+    transferTokenAmount: transferTokenAmountUnit,
+    receiveTokenSymbol: receiveToken.symbol,
+    receiveTokenAmount: receiveTokenAmountUnit,
+    priceExcludeFee,
     timestamp: getTimestamp(),
     minAmount,
     maxAmount,
