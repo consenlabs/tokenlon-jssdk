@@ -245,9 +245,10 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
   const userOutToken = await getTokenBySymbolAsync(userOutTokenSymbol)
   const userOutTokenAmount = upperCasedSide === 'SELL' ? amount :
     fromDecimalToUnit(cachedQuoteData.order.takerAssetAmount, userOutToken.decimal).toNumber()
-  const approvalTx = {
+  const approvalData = {
     rawTx: '',
     refuel: false,
+    nonce: 0,
   }
   let placeOrderResult = null
 
@@ -261,11 +262,13 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
     // 授权不足，走 approveAndSwap
     if (userOutTokenAmount > allowance) {
       const rawData = await getUnlimitedAllowanceRawDataAsync(userOutTokenSymbol)
-      approvalTx.rawTx = addHexPrefix(rawData.signResult.sign)
+      approvalData.rawTx = addHexPrefix(rawData.signResult.sign)
 
       // 是否服务端需要发币
       const balance = await getBalanceAsync('ETH')
-      approvalTx.refuel = balance <= rawData.gasFee
+      approvalData.refuel = balance <= rawData.gasFee
+
+      approvalData.nonce = rawData.nonce
     }
   }
 
@@ -275,23 +278,29 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
     isMakerEth,
   })
 
-  if (approvalTx.rawTx) {
+  if (approvalData.rawTx) {
     placeOrderResult = await approveAndSwapAsync({
       ...signedResult,
-      approvalTx,
+      approvalTx: {
+        rawTx: approvalData.rawTx,
+        refuel: approvalData.refuel,
+      },
       isMakerEth,
     })
+
+    // 发送成功后，缓存 授权的交易 nonce
+    cacheUsedNonce(approvalData.nonce)
 
   } else {
     placeOrderResult = await placeOrderAsync({
       ...signedResult,
       isMakerEth,
     })
-  }
 
-  // 交易发送成功后，缓存 nonce
-  if (isMakerEth) {
-    cacheUsedNonce(signedResult.nonce)
+    // 交易发送成功后，缓存 ETH-Token 的 tokenlon 交易 nonce
+    if (isMakerEth) {
+      cacheUsedNonce(signedResult.nonce)
+    }
   }
 
   return {
