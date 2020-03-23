@@ -1,13 +1,14 @@
 import { getCachedTokenList } from './cacheUtils'
 import { JSSDK_ERRORS } from './errors'
 import { setStompClient, setStompConnect, unsubscribeStompClientAll, disconnectStompClient, getNewOrderAsync, getLastOrderAsync, StompWsResult } from '../stomp/stompClient'
-import { toBN, getTimestamp, fromDecimalToUnit } from './utils'
+import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync } from './utils'
 import { signHandlerAsync } from './exchange/signHandlerAsync'
-import { placeOrderAsync } from './exchange/placeOrderAsync'
+import { placeOrderAsync, approveAndSwapAsync } from './exchange/placeOrderAsync'
 import { cacheUsedNonce } from './nonce'
 // import { getBalanceAsync } from './balance'
 // import { getAllowanceAsync } from './allowance'
 import { TokenlonMakerOrderBNToString } from '../global'
+import { getAllowanceAsync, getUnlimitedAllowanceRawTxAndCacheNonceAsync } from './allowance'
 
 export interface SimpleOrder {
   base: string
@@ -237,14 +238,19 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
     throw JSSDK_ERRORS.QUOTE_DATA_10S_EXPIRED
   }
 
-  const { base, quote, side } = cachedQuoteData.simpleOrder
+  const { base, quote, side, amount } = cachedQuoteData.simpleOrder
   const upperCasedSide = side.toUpperCase()
 
   const userOutTokenSymbol = upperCasedSide === 'SELL' ? base : quote
   const isMakerEth = userOutTokenSymbol === 'ETH'
-  // const userOutToken = await getTokenBySymbolAsync(userOutTokenSymbol)
-  // const userOutTokenAmount = upperCasedSide === 'SELL' ? amount :
-  //   fromDecimalToUnit(cachedQuoteData.order.takerAssetAmount, userOutToken.decimal).toNumber()
+  const userOutToken = await getTokenBySymbolAsync(userOutTokenSymbol)
+  const userOutTokenAmount = upperCasedSide === 'SELL' ? amount :
+    fromDecimalToUnit(cachedQuoteData.order.takerAssetAmount, userOutToken.decimal).toNumber()
+  const approvalTx = {
+    rawTx: '',
+    refuel: false,
+  }
+  let placeOrderResult = null
   // const balance = await getBalanceAsync(userOutTokenSymbol)
 
   // balance check
@@ -252,12 +258,15 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
   //   throw JSSDK_ERRORS.BALANCE_NOT_ENOUGH
   // }
 
-  // if (!isMakerEth) {
-  //   const allowance = await getAllowanceAsync(userOutTokenSymbol)
-  //   if (userOutTokenAmount > allowance) {
-  //     throw JSSDK_ERRORS.ALLOWANCE_NOT_ENOUGH
-  //   }
-  // }
+  if (!isMakerEth) {
+    const allowance = await getAllowanceAsync(userOutTokenSymbol)
+    // 授权不足，走 approveAndSwap
+    if (userOutTokenAmount > allowance) {
+      approvalTx.rawTx = await getUnlimitedAllowanceRawTxAndCacheNonceAsync(userOutTokenSymbol)
+    }
+
+    // TODO: 是否需要发币
+  }
 
   const signedResult = await signHandlerAsync({
     simpleOrder: cachedQuoteData.simpleOrder,
@@ -265,13 +274,24 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
     isMakerEth,
   })
 
-  const placeOrderResult = await placeOrderAsync({
-    ...signedResult,
-    isMakerEth,
-  })
+  if (approvalTx.rawTx) {
+    placeOrderResult = await approveAndSwapAsync({
+      ...signedResult,
+      approvalTx,
+      isMakerEth,
+    })
+
+  } else {
+    placeOrderResult = await placeOrderAsync({
+      ...signedResult,
+      isMakerEth,
+    })
+  }
 
   // 交易发送成功后，缓存 nonce
-  cacheUsedNonce(signedResult.nonce)
+  if (isMakerEth) {
+    cacheUsedNonce(signedResult.nonce)
+  }
 
   return {
     ...placeOrderResult,

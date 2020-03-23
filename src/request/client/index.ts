@@ -2,6 +2,7 @@ import { jsonrpc } from '../_request'
 import {
   PlaceOrderParams,
   PlaceOrderResult,
+  ApproveAndSwapParams,
   GetOrdersHistoryParams,
   GetOrderStateResult,
 } from './interface'
@@ -52,6 +53,15 @@ export const placeOrder = (params: PlaceOrderParams): Promise<PlaceOrderResult> 
     getExchangeUrl(),
     {},
     'tokenlon.placeOrder',
+    params,
+  )
+}
+
+export const approveAndSwap = (params: PlaceOrderParams): Promise<ApproveAndSwapParams> => {
+  return jsonrpc.get(
+    getExchangeUrl(),
+    {},
+    'tokenlon.approveAndSwap',
     params,
   )
 }

@@ -40,7 +40,7 @@ interface SetTokenAllowanceAsyncParams {
   spenderAddress: string
 }
 
-const setTokenAllowanceAsync = async (params: SetTokenAllowanceAsyncParams) => {
+const utilSetTokenAllowanceAsync = async (params: SetTokenAllowanceAsyncParams) => {
   const { token, amountInBaseUnits, ownerAddress, spenderAddress } = params
   const contractAddress = token.contractAddress
   const value = amountInBaseUnits.toString()
@@ -63,6 +63,15 @@ const setTokenAllowanceAsync = async (params: SetTokenAllowanceAsyncParams) => {
   }
 
   const signResult = signTransaction(signParams)
+  return {
+    gasFee: fromDecimalToUnit(toBN(gasPrice).times(APPROVE_GAS), 18).toNumber(),
+    nonce,
+    signResult,
+  }
+}
+
+const setTokenAllowanceAsync = async (params: SetTokenAllowanceAsyncParams) => {
+  const { nonce, signResult } = await utilSetTokenAllowanceAsync(params)
   const txHash = await sendSignedTransaction(addHexPrefix(signResult.sign))
 
   // 交易发送成功后，缓存 nonce
@@ -92,6 +101,24 @@ export const setUnlimitedAllowanceAsync = async (symbol) => {
     ownerAddress: address,
     spenderAddress: appConfig.userProxyContractAddress,
   })
+}
+
+// 交给 服务端去广播
+export const getUnlimitedAllowanceRawTxAndCacheNonceAsync = async (symbol) => {
+  const address = getConfig().address
+  const token = await getTokenBySymbolAsync(symbol)
+  const appConfig = await getCachedAppConfig()
+  const params = {
+    token,
+    amountInBaseUnits: toBN(2).pow(256).minus(1),
+    ownerAddress: address,
+    spenderAddress: appConfig.userProxyContractAddress,
+  }
+  const { nonce, signResult } = await utilSetTokenAllowanceAsync(params)
+
+  // 交易发送成功后，缓存 nonce
+  cacheUsedNonce(nonce)
+  return addHexPrefix(signResult.sign)
 }
 
 export const closeAllowanceAsync = async (symbol) => {

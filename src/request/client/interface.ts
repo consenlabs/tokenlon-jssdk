@@ -9,6 +9,13 @@ export interface PlaceOrderParams {
   nonce?: number
 }
 
+export interface ApproveAndSwapParams extends PlaceOrderParams {
+  approvalTx: {
+    rawTx: string,
+    refuel: boolean,
+  }
+}
+
 export interface PlaceOrderResult {
   success: boolean
 }
