@@ -1,14 +1,13 @@
 import { getCachedTokenList } from './cacheUtils'
 import { JSSDK_ERRORS } from './errors'
 import { setStompClient, setStompConnect, unsubscribeStompClientAll, disconnectStompClient, getNewOrderAsync, getLastOrderAsync, StompWsResult } from '../stomp/stompClient'
-import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync } from './utils'
+import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync, addHexPrefix } from './utils'
 import { signHandlerAsync } from './exchange/signHandlerAsync'
 import { placeOrderAsync, approveAndSwapAsync } from './exchange/placeOrderAsync'
 import { cacheUsedNonce } from './nonce'
-// import { getBalanceAsync } from './balance'
-// import { getAllowanceAsync } from './allowance'
+import { getBalanceAsync } from './balance'
 import { TokenlonMakerOrderBNToString } from '../global'
-import { getAllowanceAsync, getUnlimitedAllowanceRawTxAndCacheNonceAsync } from './allowance'
+import { getAllowanceAsync, getUnlimitedAllowanceRawDataAsync } from './allowance'
 
 export interface SimpleOrder {
   base: string
@@ -251,7 +250,6 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
     refuel: false,
   }
   let placeOrderResult = null
-  // const balance = await getBalanceAsync(userOutTokenSymbol)
 
   // balance check
   // if (userOutTokenAmount > balance || (isMakerEth && userOutTokenAmount >= balance)) {
@@ -262,10 +260,13 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
     const allowance = await getAllowanceAsync(userOutTokenSymbol)
     // 授权不足，走 approveAndSwap
     if (userOutTokenAmount > allowance) {
-      approvalTx.rawTx = await getUnlimitedAllowanceRawTxAndCacheNonceAsync(userOutTokenSymbol)
-    }
+      const rawData = await getUnlimitedAllowanceRawDataAsync(userOutTokenSymbol)
+      approvalTx.rawTx = addHexPrefix(rawData.signResult.sign)
 
-    // TODO: 是否需要发币
+      // 是否服务端需要发币
+      const balance = await getBalanceAsync('ETH')
+      approvalTx.refuel = balance <= rawData.gasFee
+    }
   }
 
   const signedResult = await signHandlerAsync({

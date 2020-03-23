@@ -40,7 +40,7 @@ interface SetTokenAllowanceAsyncParams {
   spenderAddress: string
 }
 
-const utilSetTokenAllowanceAsync = async (params: SetTokenAllowanceAsyncParams) => {
+const getAllowanceRawDataAsync = async (params: SetTokenAllowanceAsyncParams) => {
   const { token, amountInBaseUnits, ownerAddress, spenderAddress } = params
   const contractAddress = token.contractAddress
   const value = amountInBaseUnits.toString()
@@ -71,7 +71,7 @@ const utilSetTokenAllowanceAsync = async (params: SetTokenAllowanceAsyncParams) 
 }
 
 const setTokenAllowanceAsync = async (params: SetTokenAllowanceAsyncParams) => {
-  const { nonce, signResult } = await utilSetTokenAllowanceAsync(params)
+  const { nonce, signResult } = await getAllowanceRawDataAsync(params)
   const txHash = await sendSignedTransaction(addHexPrefix(signResult.sign))
 
   // 交易发送成功后，缓存 nonce
@@ -104,7 +104,7 @@ export const setUnlimitedAllowanceAsync = async (symbol) => {
 }
 
 // 交给 服务端去广播
-export const getUnlimitedAllowanceRawTxAndCacheNonceAsync = async (symbol) => {
+export const getUnlimitedAllowanceRawDataAsync = async (symbol) => {
   const address = getConfig().address
   const token = await getTokenBySymbolAsync(symbol)
   const appConfig = await getCachedAppConfig()
@@ -114,11 +114,7 @@ export const getUnlimitedAllowanceRawTxAndCacheNonceAsync = async (symbol) => {
     ownerAddress: address,
     spenderAddress: appConfig.userProxyContractAddress,
   }
-  const { nonce, signResult } = await utilSetTokenAllowanceAsync(params)
-
-  // 交易发送成功后，缓存 nonce
-  cacheUsedNonce(nonce)
-  return addHexPrefix(signResult.sign)
+  return getAllowanceRawDataAsync(params)
 }
 
 export const closeAllowanceAsync = async (symbol) => {
