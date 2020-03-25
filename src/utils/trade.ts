@@ -242,11 +242,21 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
 
   const userOutTokenSymbol = upperCasedSide === 'SELL' ? base : quote
   const isMakerEth = userOutTokenSymbol === 'ETH'
-  let placeOrderResult = null
+  // const userOutToken = await getTokenBySymbolAsync(userOutTokenSymbol)
+  // const userOutTokenAmount = upperCasedSide === 'SELL' ? amount :
+  //   fromDecimalToUnit(cachedQuoteData.order.takerAssetAmount, userOutToken.decimal).toNumber()
+  // const balance = await getBalanceAsync(userOutTokenSymbol)
 
   // balance check
   // if (userOutTokenAmount > balance || (isMakerEth && userOutTokenAmount >= balance)) {
   //   throw JSSDK_ERRORS.BALANCE_NOT_ENOUGH
+  // }
+
+  // if (!isMakerEth) {
+  //   const allowance = await getAllowanceAsync(userOutTokenSymbol)
+  //   if (userOutTokenAmount > allowance) {
+  //     throw JSSDK_ERRORS.ALLOWANCE_NOT_ENOUGH
+  //   }
   // }
 
   const signedResult = await signHandlerAsync({
@@ -255,7 +265,7 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
     isMakerEth,
   })
 
-  placeOrderResult = await placeOrderAsync({
+  const placeOrderResult = await placeOrderAsync({
     ...signedResult,
     isMakerEth,
   })
