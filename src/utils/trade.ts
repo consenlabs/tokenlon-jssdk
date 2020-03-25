@@ -237,19 +237,11 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
     throw JSSDK_ERRORS.QUOTE_DATA_10S_EXPIRED
   }
 
-  const { base, quote, side, amount } = cachedQuoteData.simpleOrder
+  const { base, quote, side } = cachedQuoteData.simpleOrder
   const upperCasedSide = side.toUpperCase()
 
   const userOutTokenSymbol = upperCasedSide === 'SELL' ? base : quote
   const isMakerEth = userOutTokenSymbol === 'ETH'
-  const userOutToken = await getTokenBySymbolAsync(userOutTokenSymbol)
-  const userOutTokenAmount = upperCasedSide === 'SELL' ? amount :
-    fromDecimalToUnit(cachedQuoteData.order.takerAssetAmount, userOutToken.decimal).toNumber()
-  const approvalData = {
-    rawTx: '',
-    refuel: false,
-    nonce: 0,
-  }
   let placeOrderResult = null
 
   // balance check
@@ -257,50 +249,20 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
   //   throw JSSDK_ERRORS.BALANCE_NOT_ENOUGH
   // }
 
-  if (!isMakerEth) {
-    const allowance = await getAllowanceAsync(userOutTokenSymbol)
-    // 授权不足，走 approveAndSwap
-    if (userOutTokenAmount > allowance) {
-      const rawData = await getUnlimitedAllowanceRawDataAsync(userOutTokenSymbol)
-      approvalData.rawTx = addHexPrefix(rawData.signResult.sign)
-
-      // 是否服务端需要发币
-      const balance = await getBalanceAsync('ETH')
-      approvalData.refuel = balance <= rawData.gasFee
-
-      approvalData.nonce = rawData.nonce
-    }
-  }
-
   const signedResult = await signHandlerAsync({
     simpleOrder: cachedQuoteData.simpleOrder,
     makerOrder: cachedQuoteData.order,
     isMakerEth,
   })
 
-  if (approvalData.rawTx) {
-    placeOrderResult = await approveAndSwapAsync({
-      ...signedResult,
-      approvalTx: {
-        rawTx: approvalData.rawTx,
-        refuel: approvalData.refuel,
-      },
-      isMakerEth,
-    })
+  placeOrderResult = await placeOrderAsync({
+    ...signedResult,
+    isMakerEth,
+  })
 
-    // 发送成功后，缓存 授权的交易 nonce
-    cacheUsedNonce(approvalData.nonce)
-
-  } else {
-    placeOrderResult = await placeOrderAsync({
-      ...signedResult,
-      isMakerEth,
-    })
-
-    // 交易发送成功后，缓存 ETH-Token 的 tokenlon 交易 nonce
-    if (isMakerEth) {
-      cacheUsedNonce(signedResult.nonce)
-    }
+  // 交易发送成功后，缓存 ETH-Token 的 tokenlon 交易 nonce
+  if (isMakerEth) {
+    cacheUsedNonce(signedResult.nonce)
   }
 
   return {
