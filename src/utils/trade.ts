@@ -1,14 +1,16 @@
 import { getCachedTokenList } from './cacheUtils'
 import { JSSDK_ERRORS } from './errors'
 import { setStompClient, setStompConnect, unsubscribeStompClientAll, disconnectStompClient, getNewOrderAsync, getLastOrderAsync, StompWsResult } from '../stomp/stompClient'
-import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync, addHexPrefix, sendSignedTransaction } from './utils'
+import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync, addHexPrefix } from './utils'
 import { signHandlerAsync } from './exchange/signHandlerAsync'
 import { placeOrderAsync, approveAndSwapAsync } from './exchange/placeOrderAsync'
 import { cacheUsedNonce } from './nonce'
 import { TokenlonMakerOrderBNToString } from '../global'
 import { getUnlimitedAllowanceSignParamsAsync } from './allowance'
 import { getOrderData, getFormatedSignedTakerData } from './exchange/takerSignAsync'
+import { signatureUtils } from '../utils/exchange/0xv2-lib/signature_utils'
 import { getConfig } from '../config'
+import { convertSignature } from '../utils/exchange/takerSignAsync'
 import { formatSignTransactionData } from './sign'
 import { orderBNToString } from './exchange/helper'
 
@@ -347,7 +349,11 @@ export const approveAndSwap = async (quoteId: string, needApprove?: boolean, ref
       approvalTx.rawTx = addHexPrefix(approveAndSwapResult.approveTx.sign)
     }
 
-    const takerSignatureHex = approveAndSwapResult.orderTx.sign
+    const orderTxSignature = approveAndSwapResult.orderTx.sign
+    const normalizedSignerAddress = userAddr.toLowerCase()
+    const prefixedMsgHashHex = signatureUtils.addSignedMessagePrefix(orderData.hash)
+    const takerSignatureHex = convertSignature({ normalizedSignerAddress, prefixedMsgHashHex, signature: orderTxSignature })
+
     const signedTakerData = getFormatedSignedTakerData(userAddr, orderData, takerSignatureHex)
 
     const resultOrder = orderBNToString({

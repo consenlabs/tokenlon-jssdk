@@ -33,20 +33,7 @@ const translateMakerOrder = (makerOrder) => {
   } as any)
 }
 
-/**
- * @author Xaber
- * @param orderHash
- * @param signerAddress
- */
-export const ecSignOrderHashAsync = async (
-  signerAddress: string,
-  orderHash: string,
-) => {
-  let msgHashHex = orderHash
-  const normalizedSignerAddress = signerAddress.toLowerCase()
-  const prefixedMsgHashHex = signatureUtils.addSignedMessagePrefix(orderHash)
-  const signature = await getConfig().personalSignFn(msgHashHex)
-
+export const convertSignature = ({ normalizedSignerAddress, prefixedMsgHashHex, signature }) => {
   // HACK: There is no consensus on whether the signatureHex string should be formatted as
   // v + r + s OR r + s + v, and different clients (even different versions of the same client)
   // return the signature params in different orders. In order to support all client implementations,
@@ -81,6 +68,26 @@ export const ecSignOrderHashAsync = async (
       )
       return convertedSignatureHex
     }
+  }
+}
+
+/**
+ * @author Xaber
+ * @param orderHash
+ * @param signerAddress
+ */
+export const ecSignOrderHashAsync = async (
+  signerAddress: string,
+  orderHash: string,
+) => {
+  const msgHashHex = orderHash
+  const normalizedSignerAddress = signerAddress.toLowerCase()
+  const prefixedMsgHashHex = signatureUtils.addSignedMessagePrefix(orderHash)
+  const signature = await getConfig().personalSignFn(msgHashHex)
+  const resultSignature = convertSignature({ normalizedSignerAddress, prefixedMsgHashHex, signature })
+
+  if (resultSignature) {
+    return resultSignature
   }
 
   throw new Error('InvalidSignature')
