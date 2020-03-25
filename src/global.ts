@@ -1,6 +1,6 @@
 export type fn = (...args: any[]) => any
 
-export type PersonalSignFn = (msg: string) => string
+export type PersonalSignFn = (msg: string) => Promise<string>
 
 export interface SignRawTransactionFnParams {
   to: string
@@ -12,7 +12,27 @@ export interface SignRawTransactionFnParams {
   value: string
 }
 
-export type signRawTransactionFn = (rawTxData: SignRawTransactionFnParams) => string
+export type signRawTransactionFn = (rawTxData: SignRawTransactionFnParams) => Promise<string>
+
+export interface ApproveAndSwapFnParams {
+  from: string
+  approveTokenSymbol: string
+  inputTokenSymbol: string
+  inputTokenAmount: string
+  outputTokenAmount: string
+  outputTokenSymbol: string
+  approveTx: SignRawTransactionFnParams
+  orderTx: {
+    data: string, // the msg used to through personalSign fn
+  }
+}
+
+export interface ApproveAndSwapFnResult {
+  approveTx: { sign: string, hash: string } | null,
+  orderTx: { sign: string }
+}
+
+export type approveAndSwapFn = (params: ApproveAndSwapFnParams) => Promise<ApproveAndSwapFnResult>
 
 export interface IConfig {
   debug?: boolean
@@ -20,6 +40,7 @@ export interface IConfig {
   providerUrl: string
   personalSignFn: PersonalSignFn
   signRawTransactionFn: signRawTransactionFn
+  approveAndSwapFn?: approveAndSwapFn
 }
 
 export interface TokenlonConfig {

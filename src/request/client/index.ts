@@ -40,7 +40,8 @@ const getTokenFromServer = async ({ timestamp, signature }): Promise<string> => 
 
 export const getSdkJwtToken = async () => {
   const timestamp = getTimestamp()
-  const signature = getConfig().personalSignFn(timestamp.toString())
+  const { personalSignFn } = getConfig()
+  const signature = await personalSignFn(timestamp.toString())
   return getTokenFromServer({ timestamp, signature })
 }
 

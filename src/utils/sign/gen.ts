@@ -45,7 +45,7 @@ export interface SignRawTransactionFnParams {
 // use ethereumjs-tx and web3.eth.sendSignedTransaction to send transaction by privateKey
 // value must be a decimal processed number
 export const genSignRawTransaction = (privateKey: string): signRawTransactionFn => {
-  return (rawTx: SignRawTransactionFnParams): string => {
+  return async (rawTx: SignRawTransactionFnParams): Promise<string> => {
     const tx = new (Tx.default ? Tx.default : Tx)(rawTx)
     const privateKeyBuffer = new Buffer(privateKey, 'hex')
     tx.sign(privateKeyBuffer)

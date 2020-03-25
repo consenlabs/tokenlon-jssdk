@@ -7,7 +7,7 @@ import { APPROVE_METHOD, APPROVE_GAS } from '../constants'
 import { getConfig } from '../config'
 import { getBalanceAsync } from './balance'
 import BigNumber from 'bignumber.js'
-import { signTransaction } from './sign'
+import { signTransactionAsync } from './sign'
 import { getGasPriceAsync } from './gasPrice'
 import { cacheUsedNonce, getNonceWrap } from './nonce'
 
@@ -40,7 +40,7 @@ interface SetTokenAllowanceAsyncParams {
   spenderAddress: string
 }
 
-const getAllowanceRawDataAsync = async (params: SetTokenAllowanceAsyncParams) => {
+const getAllowanceSignParamsAsync = async (params: SetTokenAllowanceAsyncParams) => {
   const { token, amountInBaseUnits, ownerAddress, spenderAddress } = params
   const contractAddress = token.contractAddress
   const value = amountInBaseUnits.toString()
@@ -62,20 +62,16 @@ const getAllowanceRawDataAsync = async (params: SetTokenAllowanceAsyncParams) =>
     data,
   }
 
-  const signResult = signTransaction(signParams)
-  return {
-    gasFee: fromDecimalToUnit(toBN(gasPrice).times(APPROVE_GAS), 18).toNumber(),
-    nonce,
-    signResult,
-  }
+  return signParams
 }
 
 const setTokenAllowanceAsync = async (params: SetTokenAllowanceAsyncParams) => {
-  const { nonce, signResult } = await getAllowanceRawDataAsync(params)
+  const signParams = await getAllowanceSignParamsAsync(params)
+  const signResult = await signTransactionAsync(signParams)
   const txHash = await sendSignedTransaction(addHexPrefix(signResult.sign))
 
   // 交易发送成功后，缓存 nonce
-  cacheUsedNonce(nonce)
+  cacheUsedNonce(signParams.nonce)
   return txHash
 }
 
@@ -104,17 +100,17 @@ export const setUnlimitedAllowanceAsync = async (symbol) => {
 }
 
 // 交给 服务端去广播
-export const getUnlimitedAllowanceRawDataAsync = async (symbol) => {
+export const getUnlimitedAllowanceSignParamsAsync = async (symbol) => {
   const address = getConfig().address
   const token = await getTokenBySymbolAsync(symbol)
   const appConfig = await getCachedAppConfig()
-  const params = {
+  const signParams = await getAllowanceSignParamsAsync({
     token,
     amountInBaseUnits: toBN(2).pow(256).minus(1),
     ownerAddress: address,
     spenderAddress: appConfig.userProxyContractAddress,
-  }
-  return getAllowanceRawDataAsync(params)
+  })
+  return signParams
 }
 
 export const closeAllowanceAsync = async (symbol) => {

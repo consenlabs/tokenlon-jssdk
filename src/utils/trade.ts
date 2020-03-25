@@ -5,9 +5,12 @@ import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync, addHexPre
 import { signHandlerAsync } from './exchange/signHandlerAsync'
 import { placeOrderAsync, approveAndSwapAsync } from './exchange/placeOrderAsync'
 import { cacheUsedNonce } from './nonce'
-import { getBalanceAsync } from './balance'
 import { TokenlonMakerOrderBNToString } from '../global'
-import { getAllowanceAsync, getUnlimitedAllowanceRawDataAsync } from './allowance'
+import { getUnlimitedAllowanceSignParamsAsync } from './allowance'
+import { getOrderData, getFormatedSignedTakerData } from './exchange/takerSignAsync'
+import { getConfig } from '../config'
+import { formatSignTransactionData } from './sign'
+import { orderBNToString } from './exchange/helper'
 
 export interface SimpleOrder {
   base: string
@@ -86,7 +89,7 @@ export interface QuoteResult {
   maxAmount?: number
 }
 
-const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, orderData: StompWsResult): Promise<QuoteResult>  => {
+const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, orderData: StompWsResult): Promise<QuoteResult> => {
   const { amount, base, quote, side } = simpleOrder
   const { order, minAmount, maxAmount } = orderData
   const tokenList = await getCachedTokenList()
@@ -124,9 +127,9 @@ const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, order
     receiveTokenAmountUnit = toBN(makerTokenAmountUnit).minus(feeAmount).toNumber()
     priceExcludeFee = toBN(transferTokenAmountUnit).dividedBy(receiveTokenAmountUnit).toNumber()
 
-  // 用户卖
-  // base => order takerToken => user transferToken
-  // quote => order makerToken => user receiveToken => feeToken
+    // 用户卖
+    // base => order takerToken => user transferToken
+    // quote => order makerToken => user receiveToken => feeToken
   } else {
     quoteAssetAmountUnit = makerTokenAmountUnit
     transferTokenAmountUnit = takerTokenAmountUnit
@@ -278,5 +281,105 @@ export const trade = async (quoteId: string): Promise<TradeResult> => {
   return {
     ...placeOrderResult,
     executeTxHash: signedResult.order.executeTxHash,
+  }
+}
+
+export const approveAndSwap = async (quoteId: string, needApprove?: boolean, refuel?: boolean): Promise<TradeResult> => {
+  const userAddr = getConfig().address
+  const approveAndSwapFn = getConfig().approveAndSwapFn
+  const cachedQuoteData = cachedQuoteDatas.find(item => item.order && item.order.quoteId.toUpperCase() === quoteId.toUpperCase())
+
+  if (!cachedQuoteData || !cachedQuoteData.order) {
+    throw JSSDK_ERRORS.INVALID_QUOTE_ID_PARAM
+  }
+  if (cachedQuoteData.timestamp < getTimestamp() - 10) {
+    throw JSSDK_ERRORS.QUOTE_DATA_10S_EXPIRED
+  }
+
+  const { base, quote, side, amount } = cachedQuoteData.simpleOrder
+  const upperCasedSide = side.toUpperCase()
+  const userOutTokenSymbol = upperCasedSide === 'SELL' ? base : quote
+  const userInTokenSymbol = upperCasedSide === 'SELL' ? quote : base
+  const isMakerEth = userOutTokenSymbol === 'ETH'
+
+  if (isMakerEth) {
+    throw JSSDK_ERRORS.CAN_NOT_USE_APPROVE_AND_SWAP_IF_OUT_TOKEN_IS_ETH
+  }
+
+  const userOutToken = await getTokenBySymbolAsync(userOutTokenSymbol)
+  const userInToken = await getTokenBySymbolAsync(userInTokenSymbol)
+  const userOutTokenAmount = upperCasedSide === 'SELL' ? amount : fromDecimalToUnit(cachedQuoteData.order.takerAssetAmount, userOutToken.decimal).toNumber()
+  const userInTokenAmount = upperCasedSide === 'SELL' ? fromDecimalToUnit(cachedQuoteData.order.makerAssetAmount, userInToken.decimal).toNumber() : amount
+  let approveSignParams = null
+  let placeOrderResult = null
+  const approvalTx = {
+    rawTx: null,
+    refuel,
+  }
+
+  // balance check
+  // if (userOutTokenAmount > balance || (isMakerEth && userOutTokenAmount >= balance)) {
+  //   throw JSSDK_ERRORS.BALANCE_NOT_ENOUGH
+  // }
+
+  if (!isMakerEth) {
+    if (needApprove) {
+      approveSignParams = await getUnlimitedAllowanceSignParamsAsync(userOutTokenSymbol)
+    }
+
+    const orderData = await getOrderData(userAddr, cachedQuoteData.order)
+    const orderTx = {
+      data: orderData.hash,
+    }
+
+    const approveAndSwapResult = await approveAndSwapFn({
+      from: userAddr,
+      approveTokenSymbol: userOutTokenSymbol,
+      inputTokenSymbol: userInTokenSymbol,
+      inputTokenAmount: '' + userInTokenAmount,
+      outputTokenAmount: '' + userOutTokenAmount,
+      outputTokenSymbol: userOutTokenSymbol,
+      approveTx: approveSignParams ? formatSignTransactionData(approveSignParams) : null,
+      orderTx,
+    })
+
+    console.log('approveAndSwapResult', approveAndSwapResult)
+
+    if (approveAndSwapResult.approveTx) {
+      approvalTx.rawTx = addHexPrefix(approveAndSwapResult.approveTx.sign)
+    }
+
+    const takerSignatureHex = approveAndSwapResult.orderTx.sign
+    const signedTakerData = getFormatedSignedTakerData(userAddr, orderData, takerSignatureHex)
+
+    const resultOrder = orderBNToString({
+      ...cachedQuoteData.order,
+      signedTxSalt: signedTakerData.salt,
+      // 用于链上匹配交易
+      executeTxHash: signedTakerData.executeTxHash,
+      signedTxData: signedTakerData.fillData,
+      // taker 签名（交易签名）
+      takerWalletSignature: signedTakerData.signature,
+    } as any)
+
+    console.log('resultOrder', resultOrder)
+
+    placeOrderResult = await approveAndSwapAsync({
+      userAddr: userAddr,
+      order: resultOrder,
+      source: 'jssdk',
+      approvalTx,
+      isMakerEth,
+    })
+
+    if (approvalTx.rawTx) {
+      // 发送成功后，缓存 授权的交易 nonce
+      cacheUsedNonce(approveSignParams.nonce)
+    }
+
+    return {
+      ...placeOrderResult,
+      executeTxHash: orderData.executeTxHash,
+    }
   }
 }
