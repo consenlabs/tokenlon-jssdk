@@ -1,7 +1,7 @@
 import { getCachedTokenList } from './cacheUtils'
 import { JSSDK_ERRORS } from './errors'
 import { setStompClient, setStompConnect, unsubscribeStompClientAll, disconnectStompClient, getNewOrderAsync, getLastOrderAsync, StompWsResult } from '../stomp/stompClient'
-import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync, addHexPrefix } from './utils'
+import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync, addHexPrefix, sendSignedTransaction } from './utils'
 import { signHandlerAsync } from './exchange/signHandlerAsync'
 import { placeOrderAsync, approveAndSwapAsync } from './exchange/placeOrderAsync'
 import { cacheUsedNonce } from './nonce'
@@ -360,17 +360,24 @@ export const approveAndSwap = async (quoteId: string, needApprove?: boolean, ref
       takerWalletSignature: signedTakerData.signature,
     } as any)
 
-    placeOrderResult = await approveAndSwapAsync({
-      userAddr: userAddr,
-      order: resultOrder,
-      source: 'jssdk',
-      approvalTx,
-      isMakerEth,
-    })
-
     if (approvalTx.rawTx) {
+      placeOrderResult = await approveAndSwapAsync({
+        userAddr: userAddr,
+        order: resultOrder,
+        source: 'jssdk',
+        approvalTx,
+        isMakerEth,
+      })
       // 发送成功后，缓存 授权的交易 nonce
       cacheUsedNonce(approveSignParams.nonce)
+
+    } else {
+      placeOrderResult = await placeOrderAsync({
+        userAddr: userAddr,
+        order: resultOrder,
+        source: 'jssdk',
+        isMakerEth,
+      })
     }
 
     return {
