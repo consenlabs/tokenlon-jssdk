@@ -343,8 +343,6 @@ export const approveAndSwap = async (quoteId: string, needApprove?: boolean, ref
       orderTx,
     })
 
-    console.log('approveAndSwapResult', approveAndSwapResult)
-
     if (approveAndSwapResult.approveTx) {
       approvalTx.rawTx = addHexPrefix(approveAndSwapResult.approveTx.sign)
     }
@@ -361,8 +359,6 @@ export const approveAndSwap = async (quoteId: string, needApprove?: boolean, ref
       // taker 签名（交易签名）
       takerWalletSignature: signedTakerData.signature,
     } as any)
-
-    console.log('resultOrder', resultOrder)
 
     placeOrderResult = await approveAndSwapAsync({
       userAddr: userAddr,
