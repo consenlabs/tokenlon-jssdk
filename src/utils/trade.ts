@@ -165,13 +165,14 @@ const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, order
 export interface CachedQuoteData {
   simpleOrder: SimpleOrder
   order: TokenlonMakerOrderBNToString
+  quoteResult: QuoteResult
   timestamp: number
 }
 
 // 缓存 order
 let cachedQuoteDatas = [] as CachedQuoteData[]
 
-const handleCachedQuoteDatas = (simpleOrder?: SimpleOrder, order?: TokenlonMakerOrderBNToString): CachedQuoteData[] => {
+const handleCachedQuoteDatas = (simpleOrder?: SimpleOrder, order?: TokenlonMakerOrderBNToString, quoteResult?: QuoteResult): CachedQuoteData[] => {
   const now = getTimestamp()
   // 订单在 10s 内，保留；超过 10s，移除
   cachedQuoteDatas = cachedQuoteDatas.filter(o => {
@@ -182,6 +183,7 @@ const handleCachedQuoteDatas = (simpleOrder?: SimpleOrder, order?: TokenlonMaker
     cachedQuoteDatas.push({
       simpleOrder,
       order,
+      quoteResult,
       timestamp: now,
     })
   }
@@ -211,7 +213,7 @@ export const getQuote = async (params: SimpleOrder): Promise<QuoteResult> => {
     disconnectStompClient()
 
     const quoteResult = await transformStompResultToQuoteResult(params, lastOrderData)
-    handleCachedQuoteDatas(params, lastOrderData.order)
+    handleCachedQuoteDatas(params, lastOrderData.order, quoteResult)
     return quoteResult
 
   } catch (e) {
@@ -298,20 +300,13 @@ export const approveAndSwap = async (quoteId: string, needApprove?: boolean, ref
     throw JSSDK_ERRORS.QUOTE_DATA_10S_EXPIRED
   }
 
-  const { base, quote, side, amount } = cachedQuoteData.simpleOrder
-  const upperCasedSide = side.toUpperCase()
-  const userOutTokenSymbol = upperCasedSide === 'SELL' ? base : quote
-  const userInTokenSymbol = upperCasedSide === 'SELL' ? quote : base
-  const isMakerEth = userOutTokenSymbol === 'ETH'
+  const { receiveTokenAmount, receiveTokenSymbol, transferTokenAmount, transferTokenSymbol } = cachedQuoteData.quoteResult
+  const isMakerEth = transferTokenSymbol === 'ETH'
 
   if (isMakerEth) {
     throw JSSDK_ERRORS.CAN_NOT_USE_APPROVE_AND_SWAP_IF_OUT_TOKEN_IS_ETH
   }
 
-  const userOutToken = await getTokenBySymbolAsync(userOutTokenSymbol)
-  const userInToken = await getTokenBySymbolAsync(userInTokenSymbol)
-  const userOutTokenAmount = upperCasedSide === 'SELL' ? amount : fromDecimalToUnit(cachedQuoteData.order.takerAssetAmount, userOutToken.decimal).toNumber()
-  const userInTokenAmount = upperCasedSide === 'SELL' ? fromDecimalToUnit(cachedQuoteData.order.makerAssetAmount, userInToken.decimal).toNumber() : amount
   let approveSignParams = null
   let placeOrderResult = null
   const approvalTx = {
@@ -326,7 +321,7 @@ export const approveAndSwap = async (quoteId: string, needApprove?: boolean, ref
 
   if (!isMakerEth) {
     if (needApprove) {
-      approveSignParams = await getUnlimitedAllowanceSignParamsAsync(userOutTokenSymbol)
+      approveSignParams = await getUnlimitedAllowanceSignParamsAsync(transferTokenSymbol)
     }
 
     const orderData = await getOrderData(userAddr, cachedQuoteData.order)
@@ -336,11 +331,11 @@ export const approveAndSwap = async (quoteId: string, needApprove?: boolean, ref
 
     const approveAndSwapResult = await approveAndSwapFn({
       from: userAddr,
-      approveTokenSymbol: userOutTokenSymbol,
-      inputTokenSymbol: userInTokenSymbol,
-      inputTokenAmount: '' + userInTokenAmount,
-      outputTokenAmount: '' + userOutTokenAmount,
-      outputTokenSymbol: userOutTokenSymbol,
+      inputTokenSymbol: transferTokenSymbol,
+      inputTokenAmount: '' + transferTokenAmount,
+      approveTokenSymbol: transferTokenSymbol,
+      outputTokenSymbol: transferTokenSymbol,
+      outputTokenAmount: '' + receiveTokenAmount,
       approveTx: approveSignParams ? formatSignTransactionData(approveSignParams) : null,
       orderTx,
     })
