@@ -1,7 +1,7 @@
 import { getCachedTokenList } from './cacheUtils'
 import { JSSDK_ERRORS } from './errors'
 import { setStompClient, setStompConnect, unsubscribeStompClientAll, disconnectStompClient, getNewOrderAsync, getLastOrderAsync, StompWsResult } from '../stomp/stompClient'
-import { toBN, getTimestamp, fromDecimalToUnit, getTokenBySymbolAsync, addHexPrefix } from './utils'
+import { toBN, getTimestamp, fromDecimalToUnit, addHexPrefix } from './utils'
 import { signHandlerAsync } from './exchange/signHandlerAsync'
 import { placeOrderAsync, approveAndSwapAsync } from './exchange/placeOrderAsync'
 import { cacheUsedNonce } from './nonce'
@@ -194,7 +194,7 @@ const handleCachedQuoteDatas = (simpleOrder?: SimpleOrder, order?: TokenlonMaker
 /**
  * @note 不返回 order，返回一个新的数据结构，方便用户使用
  */
-export const getQuote = async (params: SimpleOrder): Promise<QuoteResult> => {
+export const getQuote = async (params: SimpleOrder, refuel?: boolean): Promise<QuoteResult> => {
   const { base, quote, amount } = params
   await checkTradeSupported({ base, quote, amount })
 
@@ -203,10 +203,10 @@ export const getQuote = async (params: SimpleOrder): Promise<QuoteResult> => {
 
   try {
     // only to fix lastOrder front steps
-    const newOrderData = await getNewOrderAsync(params)
+    const newOrderData = await getNewOrderAsync(params, refuel)
     checkStompWsResult(amount, newOrderData)
 
-    const lastOrderData = await getLastOrderAsync(params)
+    const lastOrderData = await getLastOrderAsync(params, refuel)
     checkStompWsResult(amount, lastOrderData)
 
     unsubscribeStompClientAll()

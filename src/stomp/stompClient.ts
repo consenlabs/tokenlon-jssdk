@@ -1,4 +1,4 @@
-import { fn, TokenlonMakerOrderBNToString, TokenlonToken } from '../global'
+import { fn, TokenlonMakerOrderBNToString } from '../global'
 import StompForExchange from './StompForExchange'
 import { toBN } from '../utils/utils'
 import { getConfig } from '../config'
@@ -11,14 +11,6 @@ export const setStompClient = () => {
   if (!stompClient) {
     stompClient = new StompForExchange()
   }
-}
-
-export interface UpdateRateAndPriceByStompParams {
-  makerToken: TokenlonToken
-  takerToken: TokenlonToken
-  makerTokenAmountUnit: string
-  takerTokenAmountUnit: string
-  operateInputMode: 'maker' | 'taker'
 }
 
 export const setStompConnect = async () => {
@@ -34,7 +26,7 @@ export const updateRateAndPriceByStomp = ({
   quote,
   amount,
   side,
-}: SimpleOrder, callback: fn, isLastOrder?: boolean) => {
+}: SimpleOrder, callback: fn, isLastOrder?: boolean, refuel?: boolean) => {
   if (!stompClient) {
     return
   }
@@ -47,6 +39,7 @@ export const updateRateAndPriceByStomp = ({
     side,
     base,
     quote,
+    refuel,
   } as any
 
   if (!amount || !userAddr) {
@@ -90,7 +83,7 @@ const getOrderHelperGenerator = (isLastOrder: boolean) => {
     quote,
     amount,
     side,
-  }: SimpleOrder): Promise<StompWsResult> => {
+  }: SimpleOrder, refuel?: boolean): Promise<StompWsResult> => {
     return new Promise((resolve, reject) => {
       let resolveCalled = false
       let rejectCalled = false
@@ -132,7 +125,7 @@ const getOrderHelperGenerator = (isLastOrder: boolean) => {
         } else {
           resolveWrap(data)
         }
-      }, isLastOrder)
+      }, isLastOrder, refuel)
     }) as Promise<StompWsResult>
   }
 }

@@ -144,14 +144,19 @@ export default class StompForExchange {
     amount,
     currency,
     userAddr,
+    refuel,
   }, callback) => {
     const symbol = this.getSymbol({ base, quote })
-    const path = `/user/order/${symbol}/${side.toUpperCase()}/${amount}/${userAddr}`
+    const path = `/user/trueRate/${symbol}/${side.toUpperCase()}/${amount}/${userAddr}`
+    const header = { refuel: !!refuel }
+    if (currency) {
+      Object.assign(header, { currency })
+    }
     this.wsSubscribeJsonHelper(
       'newOrderSubscription',
       path,
       callback,
-      currency ? { currency } : {},
+      { currency, refuel },
     )
   }
   getLastOrder = ({
@@ -161,14 +166,19 @@ export default class StompForExchange {
     amount,
     currency,
     userAddr,
+    refuel,
   }, callback) => {
     const symbol = this.getSymbol({ base, quote })
     const path = `/user/lastOrder/${symbol}/${side.toUpperCase()}/${amount}/${userAddr}`
+    const header = { refuel: !!refuel }
+    if (currency) {
+      Object.assign(header, { currency })
+    }
     this.wsSubscribeJsonHelper(
       'lastOrderSubscription',
       path,
       callback,
-      currency ? { currency } : {},
+      { currency, refuel },
     )
   }
 }
