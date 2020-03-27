@@ -334,7 +334,7 @@ export const approveAndSwap = async (quoteId: string, needApprove?: boolean, ref
       inputTokenSymbol: transferTokenSymbol,
       inputTokenAmount: '' + transferTokenAmount,
       approveTokenSymbol: transferTokenSymbol,
-      outputTokenSymbol: transferTokenSymbol,
+      outputTokenSymbol: receiveTokenSymbol,
       outputTokenAmount: '' + receiveTokenAmount,
       approveTx: approveSignParams ? formatSignTransactionData(approveSignParams) : null,
       orderTx,
