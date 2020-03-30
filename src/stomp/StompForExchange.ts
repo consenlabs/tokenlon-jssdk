@@ -147,7 +147,7 @@ export default class StompForExchange {
     refuel,
   }, callback) => {
     const symbol = this.getSymbol({ base, quote })
-    const path = `/user/trueRate/${symbol}/${side.toUpperCase()}/${amount}/${userAddr}`
+    const path = `/user/order/${symbol}/${side.toUpperCase()}/${amount}/${userAddr}`
     const header = { refuel: !!refuel }
     if (currency) {
       Object.assign(header, { currency })
