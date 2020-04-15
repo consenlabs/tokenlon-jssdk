@@ -1,6 +1,6 @@
 import * as abi from 'ethereumjs-abi'
 import { TokenlonToken } from '../global'
-import { getTokenAllowance, fromDecimalToUnit, getTokenBySymbolAsync, addHexPrefix, sendSignedTransaction, fromUnitToDecimalBN, toBN } from './utils'
+import { getTokenAllowance, fromDecimalToUnit, getTokenBySymbolAsync, addHexPrefix, sendSignedTransaction, fromUnitToDecimalBN, toBN, getEstimateGas } from './utils'
 import { getCachedAppConfig } from './cacheUtils'
 import * as _ from 'lodash'
 import { APPROVE_METHOD, APPROVE_GAS } from '../constants'
@@ -49,10 +49,22 @@ const getAllowanceSignParamsAsync = async (params: SetTokenAllowanceAsyncParams)
   // 模拟 中等程度交易
   const gasPrice = await getGasPriceAsync({ base: 'USDT', amount: 100 })
   const nonce = await getNonceWrap()
+  let gas = APPROVE_GAS
+
+  try {
+    gas = await getEstimateGas({
+      value: '0x0',
+      from: ownerAddress,
+      to: contractAddress,
+      data,
+    })
+  } catch (e) {
+    console.log(e)
+  }
 
   let signParams = {
     gasPrice,
-    gas: APPROVE_GAS,
+    gas,
     from: ownerAddress,
     to: contractAddress,
     contractAddress,
