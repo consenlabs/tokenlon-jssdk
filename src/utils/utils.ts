@@ -145,7 +145,7 @@ export function getGasPrice(): Promise<BN /* bigNumber */> {
     return new Promise((resolve, reject) => {
       web3.eth.getGasPrice((err, gasPriceBN) => {
         if (!err) {
-          console.log(`[web3 res] getGasPrice to string: ${gasPriceBN.toString(10)}`)
+          // console.log(`[web3 res] getGasPrice to string: ${gasPriceBN.toString(10)}`)
           resolve(gasPriceBN)
         } else {
           reject(err)
@@ -158,7 +158,7 @@ export function getGasPrice(): Promise<BN /* bigNumber */> {
 export function getEstimateGas(tx: { value: string, from: string, to: string, data: string }): Promise<number> {
   return web3RequestWrap(web3 => {
     return new Promise((resolve, reject) => {
-      console.log(`[web3 req] estimateGas params: ${JSON.stringify(tx)}`)
+      // console.log(`[web3 req] estimateGas params: ${JSON.stringify(tx)}`)
       web3.eth.estimateGas(tx, (err, gas) => {
         if (!err) {
           resolve(gas)
