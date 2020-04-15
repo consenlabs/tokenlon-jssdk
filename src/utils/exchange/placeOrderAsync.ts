@@ -1,5 +1,5 @@
 import { SignHandlerResult } from './interface'
-import { placeOrder } from '../../request/client'
+import { placeOrder, approveAndSwap } from '../../request/client'
 import { sendSignedTransaction, addHexPrefix } from '../utils'
 
 export const placeOrderAsync = async (params: SignHandlerResult) => {
@@ -16,5 +16,21 @@ export const placeOrderAsync = async (params: SignHandlerResult) => {
       txHash,
     }
   }
+  return placeOrderResult
+}
+
+interface ApproveAndSwapAsyncParams extends SignHandlerResult {
+  approvalTx: {
+    rawTx: string,
+    refuel: boolean,
+  }
+}
+
+export const approveAndSwapAsync = async (params: ApproveAndSwapAsyncParams) => {
+  const { isMakerEth, signFillOrderWithEthResult, ...placeParams } = params
+  const placeOrderResult = await approveAndSwap({
+    ...placeParams,
+    source: 'jssdk',
+  })
   return placeOrderResult
 }

@@ -48,9 +48,7 @@ export interface SignTransactionParams {
   amount: number | string
 }
 
-// use ethereumjs-tx and web3.eth.sendSignedTransaction to send transaction by privateKey
-// value must be a decimal processed number
-export const signTransaction = (params: SignTransactionParams): SignTransactionResult => {
+export const formatSignTransactionData = (params: SignTransactionParams): SignRawTransactionFnParams => {
   const { gasPrice, to, amount, gas, data, nonce } = params
   const address = getConfig().address
   const rawTx: SignRawTransactionFnParams = {
@@ -62,7 +60,15 @@ export const signTransaction = (params: SignTransactionParams): SignTransactionR
     gasPrice: toHex(gasPrice),
     value: toHex(fromUnitToDecimal(amount, 18, 10)),
   }
-  const sign = getConfig().signRawTransactionFn(rawTx)
+  return rawTx
+}
+
+// use ethereumjs-tx and web3.eth.sendSignedTransaction to send transaction by privateKey
+// value must be a decimal processed number
+export const signTransactionAsync = async (params: SignTransactionParams): Promise<SignTransactionResult> => {
+  const rawTx = formatSignTransactionData(params)
+  const signRawTransactionFn = getConfig().signRawTransactionFn
+  const sign = await signRawTransactionFn(rawTx)
   const hash = sha3(addHexPrefix(sign))
 
   return { hash, sign }

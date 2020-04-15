@@ -6,7 +6,7 @@ import { getConfig } from '../../config'
 import { getCachedAppConfig } from '../cacheUtils'
 import { getGasPriceAsync } from '../gasPrice'
 import { SimpleOrder } from '../trade'
-import { signTransaction } from '../sign'
+import { signTransactionAsync } from '../sign'
 import { TOKENLON_FILLORDER_GAS } from '../../constants'
 import { SignHandlerResult } from './interface'
 import { TokenlonMakerOrderBNToString } from '../../global'
@@ -40,7 +40,7 @@ export const signHandlerAsync = async (params: SignHandlerParams): Promise<SignH
     const nonce = await getNonceWrap()
     const data = getFillOrderWithETHData([signedTakerData.salt, signedTakerData.fillData, signedTakerData.signature])
     const amount = fromDecimalToUnit(makerOrder.takerAssetAmount, 18).toString()
-    const signResult = await signTransaction({
+    const signResult = await signTransactionAsync({
       to: appConfig.tokenlonExchangeContractAddress,
       amount,
       nonce,

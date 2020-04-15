@@ -33,20 +33,7 @@ const translateMakerOrder = (makerOrder) => {
   } as any)
 }
 
-/**
- * @author Xaber
- * @param orderHash
- * @param signerAddress
- */
-export const ecSignOrderHash = (
-  signerAddress: string,
-  orderHash: string,
-) => {
-  let msgHashHex = orderHash
-  const normalizedSignerAddress = signerAddress.toLowerCase()
-  const prefixedMsgHashHex = signatureUtils.addSignedMessagePrefix(orderHash)
-  const signature = getConfig().personalSignFn(msgHashHex)
-
+export const convertSignature = ({ normalizedSignerAddress, prefixedMsgHashHex, signature }) => {
   // HACK: There is no consensus on whether the signatureHex string should be formatted as
   // v + r + s OR r + s + v, and different clients (even different versions of the same client)
   // return the signature params in different orders. In order to support all client implementations,
@@ -82,11 +69,38 @@ export const ecSignOrderHash = (
       return convertedSignatureHex
     }
   }
+}
+
+/**
+ * @author Xaber
+ * @param orderHash
+ * @param signerAddress
+ */
+export const ecSignOrderHashAsync = async (
+  signerAddress: string,
+  orderHash: string,
+) => {
+  const msgHashHex = orderHash
+  const normalizedSignerAddress = signerAddress.toLowerCase()
+  const prefixedMsgHashHex = signatureUtils.addSignedMessagePrefix(orderHash)
+  const signature = await getConfig().personalSignFn(msgHashHex)
+  const resultSignature = convertSignature({ normalizedSignerAddress, prefixedMsgHashHex, signature })
+
+  if (resultSignature) {
+    return resultSignature
+  }
 
   throw new Error('InvalidSignature')
 }
 
-export const takerSignAsync = async (userAddr: string, makerOrder: TokenlonMakerOrderBNToString): Promise<SignedTakerData> => {
+interface OrderData {
+  hash: string
+  fillData: string
+  executeTxHash: string
+  takerTransactionSalt: BigNumber
+}
+
+export const getOrderData = async (userAddr: string, makerOrder: TokenlonMakerOrderBNToString): Promise<OrderData> => {
   const appConfig = await getCachedAppConfig()
   // use current wallet address as receiverAddr
   const receiverAddr = userAddr
@@ -99,8 +113,16 @@ export const takerSignAsync = async (userAddr: string, makerOrder: TokenlonMaker
       ethUtil.toBuffer(executeTxHash),
       ethUtil.toBuffer(receiverAddr),
     ]))
+  return {
+    hash,
+    fillData,
+    executeTxHash,
+    takerTransactionSalt,
+  }
+}
 
-  const takerSignatureHex = await ecSignOrderHash(userAddr, hash)
+export const getFormatedSignedTakerData = (userAddr: string, orderData: OrderData, takerSignatureHex: string): SignedTakerData => {
+  const receiverAddr = userAddr
   const walletSign = ethUtil.bufferToHex(
     Buffer.concat([
       ethUtil.toBuffer(takerSignatureHex).slice(0, 65),
@@ -109,9 +131,15 @@ export const takerSignAsync = async (userAddr: string, makerOrder: TokenlonMaker
   const takerWalletSignatureHex = signatureUtils.convertToSignatureWithType(walletSign, SignatureType.Wallet)
 
   return {
-    executeTxHash,
-    fillData: fillData,
-    salt: takerTransactionSalt,
+    executeTxHash: orderData.executeTxHash,
+    fillData: orderData.fillData,
+    salt: orderData.takerTransactionSalt,
     signature: takerWalletSignatureHex,
   }
+}
+
+export const takerSignAsync = async (userAddr: string, makerOrder: TokenlonMakerOrderBNToString): Promise<SignedTakerData> => {
+  const orderData = await getOrderData(userAddr, makerOrder)
+  const takerSignatureHex = await ecSignOrderHashAsync(userAddr, orderData.hash)
+  return getFormatedSignedTakerData(userAddr, orderData, takerSignatureHex)
 }

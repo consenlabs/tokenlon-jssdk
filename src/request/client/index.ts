@@ -2,6 +2,7 @@ import { jsonrpc } from '../_request'
 import {
   PlaceOrderParams,
   PlaceOrderResult,
+  ApproveAndSwapParams,
   GetOrdersHistoryParams,
   GetOrderStateResult,
 } from './interface'
@@ -39,7 +40,8 @@ const getTokenFromServer = async ({ timestamp, signature }): Promise<string> => 
 
 export const getSdkJwtToken = async () => {
   const timestamp = getTimestamp()
-  const signature = getConfig().personalSignFn(timestamp.toString())
+  const { personalSignFn } = getConfig()
+  const signature = await personalSignFn(timestamp.toString())
   return getTokenFromServer({ timestamp, signature })
 }
 
@@ -52,6 +54,15 @@ export const placeOrder = (params: PlaceOrderParams): Promise<PlaceOrderResult> 
     getExchangeUrl(),
     {},
     'tokenlon.placeOrder',
+    params,
+  )
+}
+
+export const approveAndSwap = (params: PlaceOrderParams): Promise<ApproveAndSwapParams> => {
+  return jsonrpc.get(
+    getExchangeUrl(),
+    {},
+    'tokenlon.approveAndSwap',
     params,
   )
 }
