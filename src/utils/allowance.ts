@@ -39,7 +39,7 @@ interface SetTokenAllowanceAsyncParams {
   spenderAddress: string
 }
 
-const getAllowanceGasLimitAsync = ({ from, to, data }) => {
+const getAllowanceGasLimitAsync = async ({ from, to, data }) => {
   let gas = APPROVE_GAS
   try {
     gas = await getEstimateGas({
