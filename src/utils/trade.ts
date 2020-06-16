@@ -114,27 +114,35 @@ const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, order
   let receiveTokenAmountUnit = null
   let transferTokenAmountUnit = null
   let priceExcludeFee = null
+  let price = null
 
   // 用户买
   // base => order makerToken => user receiveToken => feeToken
   // quote => order takerToken => user transferToken
   if (side === 'BUY') {
-    quoteAssetAmountUnit = takerTokenAmountUnit
     transferTokenAmountUnit = takerTokenAmountUnit
     receiveTokenAmountUnit = toBN(makerTokenAmountUnit).minus(feeAmount).toNumber()
+
     priceExcludeFee = toBN(transferTokenAmountUnit).dividedBy(receiveTokenAmountUnit).toNumber()
 
-  // 用户卖
-  // base => order takerToken => user transferToken
-  // quote => order makerToken => user receiveToken => feeToken
+    // price 需要和 （做市商）的 order price 匹配
+    price = toBN(takerTokenAmountUnit).dividedBy(makerTokenAmountUnit).toNumber()
+
+    // 所见即所得功能影响
+    quoteAssetAmountUnit = price * amount
+
+    // 用户卖
+    // base => order takerToken => user transferToken
+    // quote => order makerToken => user receiveToken => feeToken
   } else {
     quoteAssetAmountUnit = makerTokenAmountUnit
     transferTokenAmountUnit = takerTokenAmountUnit
     receiveTokenAmountUnit = toBN(makerTokenAmountUnit).minus(feeAmount).toNumber()
     priceExcludeFee = toBN(receiveTokenAmountUnit).dividedBy(transferTokenAmountUnit).toNumber()
-  }
 
-  const price = toBN(quoteAssetAmountUnit).dividedBy(amount).toNumber()
+    // price 需要和 （做市商）的 order price 匹配
+    price = toBN(makerTokenAmountUnit).dividedBy(takerTokenAmountUnit).toNumber()
+  }
 
   return {
     base,
