@@ -87,6 +87,14 @@ const testRun = async () => {
     setTimeout(resolve, 30 * 1000)
   })
 
+  const priceResult = await jssdkClient.getPrice({
+    base: 'ETH',
+    quote: 'KNC',
+    side: 'BUY',
+    amount: 0.011,
+  })
+  console.log('getPrice result', priceResult)
+
   const quoteResult = await jssdkClient.getQuote({
     base: 'ETH',
     quote: 'KNC',

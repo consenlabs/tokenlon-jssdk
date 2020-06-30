@@ -66,15 +66,13 @@ const checkStompWsResult = (amount, result: StompWsResult) => {
   }
 }
 
-export interface QuoteResult {
-  quoteId: string
+export interface PriceResult {
   base: string
   quote: string
   side: 'BUY' | 'SELL'
   amount: number
   quoteAmount: number
   price: number
-  timestamp: number
   feeSymbol: string
   feeAmount: number
   transferTokenSymbol: string
@@ -86,7 +84,12 @@ export interface QuoteResult {
   maxAmount?: number
 }
 
-const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, orderData: StompWsResult): Promise<QuoteResult>  => {
+export interface QuoteResult extends PriceResult {
+  timestamp: number
+  quoteId: string
+}
+
+const transformStompResultToPriceResult = async (simpleOrder: SimpleOrder, orderData: StompWsResult): Promise<PriceResult>  => {
   const { amount, base, quote, side } = simpleOrder
   const { order, minAmount, maxAmount } = orderData
   const tokenList = await getCachedTokenList()
@@ -150,7 +153,6 @@ const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, order
     side,
     amount,
     quoteAmount: quoteAssetAmountUnit,
-    quoteId: order.quoteId,
     price,
     feeSymbol: feeToken.symbol,
     feeAmount,
@@ -159,9 +161,18 @@ const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, order
     receiveTokenSymbol: receiveToken.symbol,
     receiveTokenAmount: receiveTokenAmountUnit,
     priceExcludeFee,
-    timestamp: getTimestamp(),
     minAmount,
     maxAmount,
+  }
+}
+
+export const transformStompResultToQuoteResult = async (simpleOrder: SimpleOrder, orderData: StompWsResult): Promise<QuoteResult>  => {
+  const { order } = orderData
+  const priceResult = await transformStompResultToPriceResult(simpleOrder, orderData)
+  return {
+    ...priceResult,
+    quoteId: order.quoteId,
+    timestamp: getTimestamp(),
   }
 }
 
@@ -192,6 +203,28 @@ const handleCachedQuoteDatas = (simpleOrder?: SimpleOrder, order?: TokenlonMaker
   return cachedQuoteDatas
 }
 
+export const getPrice = async (params: SimpleOrder): Promise<PriceResult> => {
+  const { base, quote, amount } = params
+  await checkTradeSupported({ base, quote, amount })
+
+  setStompClient()
+  await setStompConnect()
+
+  try {
+    // only to fix lastOrder front steps
+    const newOrderData = await getNewOrderAsync(params)
+    checkStompWsResult(amount, newOrderData)
+
+    const priceResult = await transformStompResultToPriceResult(params, newOrderData)
+    return priceResult
+
+  } finally {
+    // 断开连接
+    unsubscribeStompClientAll()
+    disconnectStompClient()
+  }
+}
+
 /**
  * @note 不返回 order，返回一个新的数据结构，方便用户使用
  */
@@ -210,19 +243,14 @@ export const getQuote = async (params: SimpleOrder): Promise<QuoteResult> => {
     const lastOrderData = await getLastOrderAsync(params)
     checkStompWsResult(amount, lastOrderData)
 
-    unsubscribeStompClientAll()
-    disconnectStompClient()
-
     const quoteResult = await transformStompResultToQuoteResult(params, lastOrderData)
     handleCachedQuoteDatas(params, lastOrderData.order)
     return quoteResult
 
-  } catch (e) {
+  } finally {
     // 断开连接
     unsubscribeStompClientAll()
     disconnectStompClient()
-
-    throw e
   }
 }
 
