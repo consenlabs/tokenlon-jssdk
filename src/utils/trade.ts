@@ -215,18 +215,13 @@ export const getPrice = async (params: SimpleOrder): Promise<PriceResult> => {
     const newOrderData = await getNewOrderAsync(params)
     checkStompWsResult(amount, newOrderData)
 
-    unsubscribeStompClientAll()
-    disconnectStompClient()
-
     const priceResult = await transformStompResultToPriceResult(params, newOrderData)
     return priceResult
 
-  } catch (e) {
+  } finally {
     // 断开连接
     unsubscribeStompClientAll()
     disconnectStompClient()
-
-    throw e
   }
 }
 
@@ -248,19 +243,14 @@ export const getQuote = async (params: SimpleOrder): Promise<QuoteResult> => {
     const lastOrderData = await getLastOrderAsync(params)
     checkStompWsResult(amount, lastOrderData)
 
-    unsubscribeStompClientAll()
-    disconnectStompClient()
-
     const quoteResult = await transformStompResultToQuoteResult(params, lastOrderData)
     handleCachedQuoteDatas(params, lastOrderData.order)
     return quoteResult
 
-  } catch (e) {
+  } finally {
     // 断开连接
     unsubscribeStompClientAll()
     disconnectStompClient()
-
-    throw e
   }
 }
 
