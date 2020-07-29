@@ -1,4 +1,4 @@
-export const ETH_GAS_STATION_URL = 'https://ethgasstation.info/json/ethgasAPI.json'
+export const ETH_GAS_STATION_URL = 'https://biz.token.im/api/ethgas'
 
 export const ETH_ADDRESS = `0x${'0'.repeat(40)}`
 
